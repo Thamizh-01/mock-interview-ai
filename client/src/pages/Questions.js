@@ -11,6 +11,7 @@ const Questions = () => {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [error, setError] = useState(null);
   const [score, setScore] = useState(0);
   const [attendedCount, setAttendedCount] = useState(0);
   const [analysisResult, setAnalysisResult] = useState(null);
@@ -24,16 +25,27 @@ const Questions = () => {
   const loadCategories = async () => {
     try {
       const res = await api.get('/questions');
-      setCategories(res.data.categories);
+
+      console.log('Categories Response:', res.data);
+
+      setCategories(
+        Array.isArray(res.data.categories)
+          ? res.data.categories
+          : []
+      );
+      setError(null);
     } catch (err) {
-      console.error('Failed to load categories:', err);
+      console.error(err);
+      setCategories([]);
+      setError('Unable to load question categories. Please refresh the page or try again later.');
     }
   };
 
   const loadQuestions = async (category) => {
     try {
       const res = await api.get(`/questions/${category}`);
-      setQuestions(res.data.questions);
+
+      setQuestions(res.data.questions || []);
       setSelectedCategory(category);
       setCurrentIndex(0);
       setShowAnswer(false);
@@ -45,8 +57,10 @@ const Questions = () => {
       setAnalysisResult(null);
       setQuestionResults([]);
       setShowDetailedReport(false);
+      setError(null);
     } catch (err) {
       console.error('Failed to load questions:', err);
+      setError('Unable to load questions for this category. Please try again later.');
     }
   };
 
@@ -222,8 +236,13 @@ const Questions = () => {
         <div className="container">
           <h2 className="text-center mb-4">Practice Questions</h2>
           <p className="text-center text-muted mb-4">Select a domain to start practicing</p>
+          {error && (
+            <div className="alert alert-danger text-center mb-4">
+              {error}
+            </div>
+          )}
           <div className="category-grid">
-            {categories.map(cat => (
+            {(categories ?? []).map(cat => (
               <div 
                 key={cat.name} 
                 className="category-card card"

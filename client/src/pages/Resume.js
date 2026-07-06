@@ -51,11 +51,7 @@ const Resume = () => {
       
       console.log('Uploading file:', file.name, file.size, file.type);
       
-      const res = await api.post('/resume/upload', formData, {
-        headers: { 
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const res = await api.post('/resume/upload', formData);
       
       console.log('Upload & Analyze response:', res.data);
       
@@ -68,7 +64,11 @@ const Resume = () => {
     } catch (err) {
       console.error('Analysis failed:', err);
       console.error('Error details:', err.response?.data);
-      showMessage('error', err.response?.data?.message || 'Failed to analyze resume');
+      if (err.response?.status === 401) {
+        showMessage('error', 'Please sign in to analyze your resume.');
+      } else {
+        showMessage('error', err.response?.data?.message || 'Failed to analyze resume');
+      }
     } finally {
       setAnalyzing(false);
     }
