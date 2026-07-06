@@ -51,6 +51,19 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Serve React build in production / render deployments
+const clientBuildPath = path.join(__dirname, "../client/build");
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api/")) {
+      return res.status(404).send("Not Found");
+    }
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
+
 // MongoDB
 if (process.env.MONGODB_URI) {
   mongoose
