@@ -11,6 +11,9 @@ const Login = () => {
   const navigate = useNavigate();
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+  const googleConfigured = Boolean(googleClientId);
+
   const handleGoogleResponse = useCallback(async (response) => {
     setGoogleLoading(true);
     try {
@@ -25,9 +28,14 @@ const Login = () => {
 
   useEffect(() => {
     const initGoogle = () => {
+      if (!googleClientId) {
+        console.error('Google client ID is missing. Set REACT_APP_GOOGLE_CLIENT_ID in client/.env.');
+        return;
+      }
+
       if (window.google && window.google.accounts && window.google.accounts.id) {
         window.google.accounts.id.initialize({
-          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+          client_id: googleClientId,
           callback: handleGoogleResponse
         });
       }
@@ -45,29 +53,15 @@ const Login = () => {
         script.parentNode.removeChild(script);
       }
     };
-  }, [handleGoogleResponse]);
+  }, [googleClientId, handleGoogleResponse]);
 
   const handleGoogleClick = () => {
-    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
-        scope: 'profile email openid',
-        callback: async (tokenResponse) => {
-          if (tokenResponse.access_token) {
-            setGoogleLoading(true);
-            try {
-              await loginWithGoogle(tokenResponse.access_token);
-              navigate('/questions');
-            } catch (err) {
-              setError(err.response?.data?.message || 'Google login failed');
-            } finally {
-              setGoogleLoading(false);
-            }
-          }
-        }
-      });
-      tokenClient.requestAccessToken({ prompt: 'consent' });
-    } else if (window.google && window.google.accounts && window.google.accounts.id) {
+    if (!googleClientId) {
+      setError('Google client ID is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID in client/.env.');
+      return;
+    }
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
       window.google.accounts.id.prompt();
     } else {
       setError('Google Sign-In not loaded. Please refresh the page.');
@@ -107,7 +101,7 @@ const Login = () => {
             type="button" 
             className="google-btn"
             onClick={handleGoogleClick}
-            disabled={googleLoading}
+            disabled={googleLoading || !googleConfigured}
           >
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -117,6 +111,11 @@ const Login = () => {
             </svg>
             {googleLoading ? 'Signing in...' : 'Continue with Google'}
           </button>
+          {!googleConfigured && (
+            <div className="warning-message" style={{ marginTop: '12px' }}>
+              Google sign-in is disabled until <code>REACT_APP_GOOGLE_CLIENT_ID</code> is set in <code>client/.env</code>.
+            </div>
+          )}
         </div>
         
         <div className="divider">

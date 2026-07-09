@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "mockpro-server": "file:.."
+  }
+}

@@ -1,17 +1,9 @@
 {
   "name": "mockpro",
   "version": "1.0.0",
-  "description": "Mock Interview Preparation Platform",
   "main": "server/index.js",
   "scripts": {
-    "start": "npm run server",
-    "client": "cd client && npm start",
-    "server": "cd server && npm start",
-    "build-client": "cd client && npm install && npm run build",
-    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
-  },
-  "dependencies": {
-    "concurrently": "^8.2.2"
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
+    "start": "node server/index.js"
   }
 }

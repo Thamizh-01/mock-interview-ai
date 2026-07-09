@@ -79,21 +79,52 @@ router.post('/login', async (req, res) => {
 router.post('/google', async (req, res) => {
   try {
     const { googleToken } = req.body;
-    
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      return res.status(500).json({ message: 'Google client ID is not configured on the server' });
+    }
+
     if (!googleToken) {
       return res.status(400).json({ message: 'No Google token provided' });
     }
 
-    const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, {
-      headers: { Authorization: `Bearer ${googleToken}` }
-    });
+    let googleUser;
+    const isIdToken = typeof googleToken === 'string' && googleToken.split('.').length === 3;
+    const tokenInfoUrl = isIdToken
+      ? `https://oauth2.googleapis.com/tokeninfo?id_token=${googleToken}`
+      : `https://oauth2.googleapis.com/tokeninfo?access_token=${googleToken}`;
 
-    if (!response.ok) {
+    const tokenInfoResponse = await fetch(tokenInfoUrl);
+    if (!tokenInfoResponse.ok) {
       return res.status(401).json({ message: 'Invalid Google token' });
     }
 
-    const googleUser = await response.json();
-    
+    const tokenInfo = await tokenInfoResponse.json();
+    const tokenClientId = tokenInfo.aud || tokenInfo.audience || tokenInfo.issued_to;
+
+    if (tokenClientId !== clientId) {
+      return res.status(401).json({
+        message: 'Google token was issued for a different client ID',
+        expectedClientId: clientId,
+        receivedClientId: tokenClientId
+      });
+    }
+
+    if (isIdToken) {
+      googleUser = tokenInfo;
+    } else {
+      const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, {
+        headers: { Authorization: `Bearer ${googleToken}` }
+      });
+
+      if (!response.ok) {
+        return res.status(401).json({ message: 'Invalid Google token' });
+      }
+
+      googleUser = await response.json();
+    }
+
     let user = await User.findOne({ googleId: googleUser.sub });
     
     if (!user) {

@@ -15,12 +15,13 @@ const analyticsRoutes = require("./routes/analytics");
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
+  console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -35,7 +36,10 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use("/uploads", express.static(uploadsPath));
 
-// Routes
+/* ===========================
+   API Routes
+=========================== */
+
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/aptitude", aptitudeRoutes);
@@ -43,50 +47,61 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
-// Health check
 app.get("/api/health", (req, res) => {
   res.json({
-    status: "ok",
-    message: "MockPro API is running",
+    success: true,
+    message: "Mock Interview API is running"
   });
 });
 
-// Serve React build in production / render deployments
-const clientBuildPath = path.join(__dirname, "../client/build");
-if (fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
+/* ===========================
+   MongoDB
+=========================== */
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("MongoDB Error:", err));
+
+/* ===========================
+   Serve React Build
+=========================== */
+
+const buildPath = path.join(__dirname, "../client/build");
+
+if (fs.existsSync(buildPath)) {
+  console.log("Serving React build from:", buildPath);
+
+  app.use(express.static(buildPath));
 
   app.get("*", (req, res) => {
-    if (req.path.startsWith("/api/")) {
-      return res.status(404).send("Not Found");
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({
+        success: false,
+        message: "API Route Not Found"
+      });
     }
-    res.sendFile(path.join(clientBuildPath, "index.html"));
+
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+} else {
+  console.log("React build folder not found.");
+
+  app.get("/", (req, res) => {
+    res.send("Mock Interview Backend is Running...");
   });
 }
 
-// MongoDB
-if (process.env.MONGODB_URI) {
-  mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => console.log("MongoDB connected"))
-    .catch((err) => console.error("MongoDB connection error:", err));
-} else {
-  console.log("No MongoDB URI provided");
-}
+/* ===========================
+   Start Server
+=========================== */
 
-// Only listen locally
 const PORT = process.env.PORT || 5000;
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
   });
 }
 
-// Export for Vercel
 module.exports = app;
-
-// Handle errors
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection:", err);
-});
