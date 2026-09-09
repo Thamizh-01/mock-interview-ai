@@ -58,25 +58,37 @@ async function extractText(filePath) {
     }
 
     if (ext === '.pdf') {
-      const buffer = fs.readFileSync(filePath);
-
-      // 1. Primary: pdf-parse v2 (class-based)
+      // 1. Primary: pdf2json (fast, serverless-friendly, handles all PDF versions)
       try {
-        const { PDFParse } = require('pdf-parse');
-        if (PDFParse) {
-          const parser = new PDFParse({ data: new Uint8Array(buffer) });
-          const res = await parser.getText();
-          if (res?.text && res.text.trim()) {
-            console.log(`[PDFParse v2] Extracted ${res.text.length} characters`);
-            return res.text;
-          }
+        const PDFParser = require('pdf2json');
+        const textFromPdf = await new Promise((resolve) => {
+          const parser = new PDFParser(null, 1);
+          parser.on('pdfParser_dataReady', () => {
+            try {
+              const raw = parser.getRawTextContent();
+              resolve(raw ? raw.replace(/----------------Page \(\d+\) Break----------------/g, '\n').trim() : '');
+            } catch (_) {
+              resolve('');
+            }
+          });
+          parser.on('pdfParser_dataError', (err) => {
+            console.warn('[pdf2json error]:', err?.parserError || err);
+            resolve('');
+          });
+          parser.loadPDF(filePath);
+        });
+
+        if (textFromPdf && textFromPdf.length > 20) {
+          console.log(`[pdf2json] Successfully extracted ${textFromPdf.length} characters`);
+          return textFromPdf;
         }
-      } catch (e1) {
-        console.warn('[PDFParse v2 attempt failed]:', e1.message);
+      } catch (e0) {
+        console.warn('[pdf2json attempt failed]:', e0.message);
       }
 
-      // 2. Secondary: pdf-parse v1 (function-based)
+      // 2. Secondary: pdf-parse
       try {
+        const buffer = fs.readFileSync(filePath);
         const pdf = require('pdf-parse');
         if (typeof pdf === 'function') {
           const data = await pdf(buffer);
@@ -85,19 +97,20 @@ async function extractText(filePath) {
             return data.text;
           }
         }
-      } catch (e2) {
-        console.warn('[pdf-parse v1 attempt failed]:', e2.message);
-      }
+      } catch (e1) {}
 
       // 3. Fallback: readable text chunks extraction
-      const raw = buffer.toString('binary');
-      const chunks = raw.match(/[(]([A-Za-z0-9 ,.\-@:/+#()&%$!?'"]{3,})[)]/g) ||
-                     raw.match(/[A-Za-z0-9 ,.\-@\n\r:/+#()&%$!?'"]{4,}/g) || [];
-      const extracted = chunks.join(' ').replace(/\\/g, '').trim();
-      if (extracted.length > 50) {
-        console.log(`[Text chunk fallback] Extracted ${extracted.length} characters`);
-        return extracted;
-      }
+      try {
+        const buffer = fs.readFileSync(filePath);
+        const raw = buffer.toString('binary');
+        const chunks = raw.match(/[(]([A-Za-z0-9 ,.\-@:/+#()&%$!?'"]{3,})[)]/g) ||
+                       raw.match(/[A-Za-z0-9 ,.\-@\n\r:/+#()&%$!?'"]{4,}/g) || [];
+        const extracted = chunks.join(' ').replace(/\\/g, '').trim();
+        if (extracted.length > 50) {
+          console.log(`[Text chunk fallback] Extracted ${extracted.length} characters`);
+          return extracted;
+        }
+      } catch (_) {}
     }
 
     // Default plain text read
