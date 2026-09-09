@@ -37,6 +37,80 @@ if (!fs.existsSync(uploadsPath)) {
 app.use("/uploads", express.static(uploadsPath));
 
 /* ===========================
+   MongoDB (Serverless-ready Connection)
+=========================== */
+
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 8000,
+    };
+
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error("MONGODB_URI environment variable is missing");
+    }
+
+    cached.promise = mongoose
+      .connect(uri, opts)
+      .then((m) => {
+        console.log("✅ MongoDB Connected");
+        return m;
+      })
+      .catch((err) => {
+        console.error("❌ MongoDB Connection Error:", err.message);
+        cached.promise = null;
+        throw err;
+      });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (err) {
+    cached.promise = null;
+    throw err;
+  }
+}
+
+// Attempt initial connection asynchronously
+if (process.env.MONGODB_URI) {
+  connectDB().catch((err) => console.error("Initial MongoDB connect failed:", err.message));
+}
+
+// Middleware: ensure database is connected before handling DB-dependent API routes
+app.use(async (req, res, next) => {
+  if (req.path === "/api/health" || req.path === "/api/auth/config") {
+    return next();
+  }
+  if (req.path.startsWith("/api")) {
+    try {
+      await connectDB();
+      next();
+    } catch (err) {
+      console.error(`Database connection failed for ${req.method} ${req.path}:`, err.message);
+      return res.status(503).json({
+        success: false,
+        message: "Database connection failed",
+        error: err.message
+      });
+    }
+  } else {
+    next();
+  }
+});
+
+/* ===========================
    API Routes
 =========================== */
 
@@ -47,27 +121,31 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
   const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
+  let dbStatus = "disconnected";
+  let dbError = null;
+
+  try {
+    await connectDB();
+    dbStatus = "connected";
+  } catch (err) {
+    dbStatus = "disconnected";
+    dbError = err.message;
+  }
+
   res.json({
     success: true,
     message: "Mock Interview API is running",
-    database: dbStates[mongoose.connection.readyState] || "unknown",
+    database: dbStatus,
+    readyState: dbStates[mongoose.connection.readyState] || "unknown",
+    dbError: dbError,
     hasMongoUri: !!process.env.MONGODB_URI,
     isLocalMongo: (process.env.MONGODB_URI || '').includes('localhost') || (process.env.MONGODB_URI || '').includes('127.0.0.1'),
     hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
     hasGeminiKey: !!process.env.GEMINI_API_KEY
   });
 });
-
-/* ===========================
-   MongoDB
-=========================== */
-
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("MongoDB Error:", err));
 
 /* ===========================
    Serve React Build

@@ -11,6 +11,12 @@ const generateToken = (userId) => {
   );
 };
 
+router.get('/config', (req, res) => {
+  res.json({
+    googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+  });
+});
+
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
