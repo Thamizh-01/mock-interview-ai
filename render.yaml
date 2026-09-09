@@ -10,4 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: REACT_APP_GOOGLE_CLIENT_ID
+        value: 961158324129-blao26on15r1hpmbe4nfthha6bod7vh9.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_ID
+        value: 961158324129-blao26on15r1hpmbe4nfthha6bod7vh9.apps.googleusercontent.com
     autoDeploy: true

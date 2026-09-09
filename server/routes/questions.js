@@ -1085,6 +1085,8 @@ const questions = {
   ]
 };
 
+const { domainCatalog, domainQuestionsMap, getQuestionsBySubtype } = require('../data/domainQuestions');
+
 router.get('/', (req, res) => {
   const categories = Object.keys(questions).map(cat => ({
     name: cat,
@@ -1103,11 +1105,44 @@ router.get('/', (req, res) => {
                  cat.charAt(0).toUpperCase() + cat.slice(1).replace(/([A-Z])/g, ' $1'),
     count: questions[cat].length
   }));
-  res.json({ categories });
+  res.json({ categories, domains: domainCatalog });
+});
+
+// GET questions by domain and subtype (e.g. /api/questions/fullstack/react -> 30 questions)
+router.get('/:domain/:subtype', (req, res) => {
+  const { domain, subtype } = req.params;
+  const list = getQuestionsBySubtype(domain, subtype);
+  if (!list || list.length === 0) {
+    return res.status(404).json({ message: `No questions found for domain '${domain}', subtype '${subtype}'` });
+  }
+  res.json({
+    domain,
+    subtype,
+    count: list.length,
+    questions: list
+  });
 });
 
 router.get('/:category', (req, res) => {
   const { category } = req.params;
+
+  // Check if it matches a domain in domainCatalog
+  const domain = domainCatalog.find(d => d.id === category);
+  if (domain) {
+    return res.json({
+      category,
+      domain,
+      subtypes: domain.subtypes,
+      count: domain.subtypes.reduce((sum, s) => sum + s.count, 0)
+    });
+  }
+
+  // Check if it's a subtype directly (e.g. /api/questions/react)
+  const subtypeQuestions = domainQuestionsMap[category];
+  if (subtypeQuestions) {
+    return res.json({ category, count: subtypeQuestions.length, questions: subtypeQuestions });
+  }
+
   if (!questions[category]) {
     return res.status(404).json({ message: 'Category not found' });
   }

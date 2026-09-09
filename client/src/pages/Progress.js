@@ -71,12 +71,16 @@ const Progress = () => {
             <p>Questions Reviewed</p>
           </div>
           <div className="stat-card card">
-            <h3>{progress?.categoriesPracticed?.length || 0}</h3>
-            <p>Categories Practiced</p>
+            <h3>{progress?.mockInterviewsCompleted || 0}</h3>
+            <p>Mock Interviews</p>
           </div>
           <div className="stat-card card">
-            <h3>{progress?.mockInterviewsCompleted || 0}</h3>
-            <p>Mock Interviews Completed</p>
+            <h3>{progress?.aptitudeCompleted || 0}</h3>
+            <p>Aptitude Quizzes</p>
+          </div>
+          <div className="stat-card card">
+            <h3>{progress?.categoriesPracticed?.length || 0}</h3>
+            <p>Domains Covered</p>
           </div>
         </div>
 

@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 
 const activitySchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
-  type: { type: String, enum: ['question_reviewed', 'interview_completed', 'resume_analyzed', 'category_practiced'] },
+  type: { type: String, enum: ['question_reviewed', 'interview_completed', 'resume_analyzed', 'category_practiced', 'aptitude_completed'] },
   category: String,
   details: mongoose.Schema.Types.Mixed
 });
@@ -67,6 +67,8 @@ const userSchema = new mongoose.Schema({
     questionsReviewed: { type: Number, default: 0 },
     categoriesPracticed: [{ type: String }],
     mockInterviewsCompleted: { type: Number, default: 0 },
+    aptitudeCompleted: { type: Number, default: 0 },
+    resumesAnalyzed: { type: Number, default: 0 },
     totalTimeSpent: { type: Number, default: 0 },
     averageScore: { type: Number, default: 0 }
   },

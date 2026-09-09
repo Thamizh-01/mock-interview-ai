@@ -8,3 +8,4 @@ build/
 *.zip
 .vercel
 .env*
+server/uploads/

@@ -1,77 +1,98 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const optionalAuth = require('../middleware/optionalAuth');
+const ProgressStore = require('../services/progressStore');
 
-const inMemoryProgress = {
-  questionsReviewed: 0,
-  categoriesPracticed: [],
-  mockInterviewsCompleted: 0,
-  totalTimeSpent: 0,
-  averageScore: 0
-};
-
-const inMemoryActivities = [];
-
-router.get('/', async (req, res) => {
-  res.json({ progress: inMemoryProgress });
+// GET /api/progress - Fetch user progress
+router.get('/', optionalAuth, async (req, res) => {
+  try {
+    const progress = await ProgressStore.getProgress(req.user);
+    res.json({ progress });
+  } catch (err) {
+    console.error('Failed to get progress:', err);
+    res.status(500).json({ error: 'Failed to retrieve progress' });
+  }
 });
 
-router.post('/mark-reviewed', async (req, res) => {
-  const { questionId, category, timeSpent = 0 } = req.body;
-  inMemoryProgress.questionsReviewed += 1;
-  if (category && !inMemoryProgress.categoriesPracticed.includes(category)) {
-    inMemoryProgress.categoriesPracticed.push(category);
+// POST /api/progress/mark-reviewed - Record question practice
+router.post('/mark-reviewed', optionalAuth, async (req, res) => {
+  try {
+    const { questionId, category, timeSpent = 1, score = null } = req.body;
+    const result = await ProgressStore.recordQuestionReviewed({
+      user: req.user,
+      questionId,
+      category,
+      timeSpent,
+      score
+    });
+    res.json({ message: 'Question marked as reviewed', progress: result.progress });
+  } catch (err) {
+    console.error('Failed to record question reviewed:', err);
+    res.status(500).json({ error: 'Failed to record question progress' });
   }
-  inMemoryProgress.totalTimeSpent += timeSpent;
-  inMemoryActivities.push({
-    type: 'question_reviewed',
-    category,
-    details: { questionId, timeSpent },
-    date: new Date()
-  });
-  if (inMemoryActivities.length > 500) {
-    inMemoryActivities.splice(0, inMemoryActivities.length - 500);
-  }
-  res.json({ message: 'Question marked as reviewed', progress: inMemoryProgress });
 });
 
-router.post('/complete-interview', async (req, res) => {
-  const { timeSpent = 0, score = 0, categories = [] } = req.body;
-  inMemoryProgress.mockInterviewsCompleted += 1;
-  inMemoryProgress.totalTimeSpent += timeSpent;
-  if (score > 0 && inMemoryProgress.mockInterviewsCompleted > 0) {
-    const currentAvg = inMemoryProgress.averageScore;
-    const total = inMemoryProgress.mockInterviewsCompleted;
-    inMemoryProgress.averageScore = ((currentAvg * (total - 1)) + score) / total;
+// POST /api/progress/complete-interview - Record mock interview session
+router.post('/complete-interview', optionalAuth, async (req, res) => {
+  try {
+    const { timeSpent = 15, score = 80, categories = [], ratings = {} } = req.body;
+    const result = await ProgressStore.recordInterviewCompleted({
+      user: req.user,
+      timeSpent,
+      score,
+      categories,
+      ratings
+    });
+    res.json({ message: 'Interview completed and saved', progress: result.progress });
+  } catch (err) {
+    console.error('Failed to record interview completion:', err);
+    res.status(500).json({ error: 'Failed to record interview progress' });
   }
-  categories.forEach(cat => {
-    if (!inMemoryProgress.categoriesPracticed.includes(cat)) {
-      inMemoryProgress.categoriesPracticed.push(cat);
-    }
-  });
-  inMemoryActivities.push({
-    type: 'interview_completed',
-    details: { timeSpent, score, categories },
-    date: new Date()
-  });
-  if (inMemoryActivities.length > 500) {
-    inMemoryActivities.splice(0, inMemoryActivities.length - 500);
-  }
-  res.json({ message: 'Interview completed', progress: inMemoryProgress });
 });
 
-router.post('/analyze-resume', async (req, res) => {
-  res.json({ message: 'Resume analyzed', progress: inMemoryProgress });
+// POST /api/progress/complete-aptitude - Record aptitude quiz completion
+router.post('/complete-aptitude', optionalAuth, async (req, res) => {
+  try {
+    const { topic, score = 0, totalQuestions = 10, timeSpent = 5 } = req.body;
+    const result = await ProgressStore.recordAptitudeCompleted({
+      user: req.user,
+      topic,
+      score,
+      totalQuestions,
+      timeSpent
+    });
+    res.json({ message: 'Aptitude progress recorded', progress: result.progress });
+  } catch (err) {
+    console.error('Failed to record aptitude progress:', err);
+    res.status(500).json({ error: 'Failed to record aptitude progress' });
+  }
 });
 
-router.post('/reset', async (req, res) => {
-  inMemoryProgress.questionsReviewed = 0;
-  inMemoryProgress.categoriesPracticed = [];
-  inMemoryProgress.mockInterviewsCompleted = 0;
-  inMemoryProgress.totalTimeSpent = 0;
-  inMemoryProgress.averageScore = 0;
-  inMemoryActivities.length = 0;
-  res.json({ message: 'Progress reset successfully', progress: inMemoryProgress });
+// POST /api/progress/analyze-resume - Record resume analysis
+router.post('/analyze-resume', optionalAuth, async (req, res) => {
+  try {
+    const { score = 85, fileName = 'Resume.pdf' } = req.body;
+    const result = await ProgressStore.recordResumeAnalyzed({
+      user: req.user,
+      score,
+      fileName
+    });
+    res.json({ message: 'Resume analysis recorded', progress: result.progress });
+  } catch (err) {
+    console.error('Failed to record resume progress:', err);
+    res.status(500).json({ error: 'Failed to record resume progress' });
+  }
+});
+
+// POST /api/progress/reset - Reset progress
+router.post('/reset', optionalAuth, async (req, res) => {
+  try {
+    const emptyProgress = await ProgressStore.reset(req.user);
+    res.json({ message: 'Progress reset successfully', progress: emptyProgress });
+  } catch (err) {
+    console.error('Failed to reset progress:', err);
+    res.status(500).json({ error: 'Failed to reset progress' });
+  }
 });
 
 module.exports = router;
