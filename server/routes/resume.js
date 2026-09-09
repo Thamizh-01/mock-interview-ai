@@ -8,7 +8,7 @@ const User = require('../models/User');
 
 // ── Optional parsers ────────────────────────────────────────────────────────
 let mammoth, PDFDocument;
-try { mammoth     = require('mammoth');  } catch (e) {}
+try { mammoth     = require('mammoth'); } catch (e) {}
 try { PDFDocument = require('pdfkit');  } catch (e) {}
 
 // ── Multer storage ─────────────────────────────────────────────────────────
@@ -47,42 +47,60 @@ async function extractText(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   try {
     if ((ext === '.doc' || ext === '.docx') && mammoth) {
-      const result = await mammoth.extractRawText({ path: filePath });
-      if (result && result.value) return result.value;
+      try {
+        const result = await mammoth.extractRawText({ path: filePath });
+        if (result?.value && result.value.trim()) return result.value;
+      } catch (_) {
+        const buffer = fs.readFileSync(filePath);
+        const result = await mammoth.extractRawText({ buffer });
+        if (result?.value && result.value.trim()) return result.value;
+      }
     }
+
     if (ext === '.pdf') {
       const buffer = fs.readFileSync(filePath);
-      // Try standard pdf-parse
+
+      // 1. Primary: pdf-parse v2 (class-based)
+      try {
+        const { PDFParse } = require('pdf-parse');
+        if (PDFParse) {
+          const parser = new PDFParse({ data: new Uint8Array(buffer) });
+          const res = await parser.getText();
+          if (res?.text && res.text.trim()) {
+            console.log(`[PDFParse v2] Extracted ${res.text.length} characters`);
+            return res.text;
+          }
+        }
+      } catch (e1) {
+        console.warn('[PDFParse v2 attempt failed]:', e1.message);
+      }
+
+      // 2. Secondary: pdf-parse v1 (function-based)
       try {
         const pdf = require('pdf-parse');
         if (typeof pdf === 'function') {
           const data = await pdf(buffer);
-          if (data && data.text && data.text.trim()) return data.text;
-        } else if (pdf && pdf.PDFParse) {
-          const parser = new pdf.PDFParse({});
-          const data = await parser.load({ data: new Uint8Array(buffer) });
-          if (data && data.text && data.text.trim()) return data.text;
+          if (data?.text && data.text.trim()) {
+            console.log(`[pdf-parse v1] Extracted ${data.text.length} characters`);
+            return data.text;
+          }
         }
-      } catch (pdfErr) {
-        console.warn('pdf-parse standard attempt:', pdfErr.message);
+      } catch (e2) {
+        console.warn('[pdf-parse v1 attempt failed]:', e2.message);
       }
 
-      // Try pdf-parse v2 class if present
-      try {
-        const { PDFParse } = require('pdf-parse');
-        if (PDFParse) {
-          const parser = new PDFParse({});
-          const data = await parser.load({ data: new Uint8Array(buffer) });
-          if (data && data.text && data.text.trim()) return data.text;
-        }
-      } catch (_) {}
-
-      // Fallback: read raw bytes and extract readable ASCII chunks
+      // 3. Fallback: readable text chunks extraction
       const raw = buffer.toString('binary');
-      const chunks = raw.match(/[A-Za-z0-9 ,.\-@\n\r:\/+#()&%$!?'"]{4,}/g) || [];
-      const extracted = chunks.join(' ').trim();
-      if (extracted.length > 30) return extracted;
+      const chunks = raw.match(/[(]([A-Za-z0-9 ,.\-@:/+#()&%$!?'"]{3,})[)]/g) ||
+                     raw.match(/[A-Za-z0-9 ,.\-@\n\r:/+#()&%$!?'"]{4,}/g) || [];
+      const extracted = chunks.join(' ').replace(/\\/g, '').trim();
+      if (extracted.length > 50) {
+        console.log(`[Text chunk fallback] Extracted ${extracted.length} characters`);
+        return extracted;
+      }
     }
+
+    // Default plain text read
     return fs.readFileSync(filePath, 'utf8');
   } catch (err) {
     console.error('Text extraction error:', err.message);
@@ -91,194 +109,366 @@ async function extractText(filePath) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SMART AI-LIKE RESUME ANALYZER
+// REAL-WORLD INDUSTRY-STANDARD RESUME & ATS EVALUATION ENGINE
 // ══════════════════════════════════════════════════════════════════════════════
+
+const ROLE_DICTIONARY = {
+  'Full Stack Developer': {
+    primary: ['react', 'node', 'express', 'mongodb', 'fullstack', 'full-stack', 'full stack', 'next.js', 'nextjs', 'typescript', 'sql', 'rest api'],
+    secondary: ['redux', 'graphql', 'tailwind', 'docker', 'postgresql', 'aws', 'prisma', 'ci/cd', 'webpack', 'jwt'],
+    benchmarks: ['react', 'node', 'javascript', 'typescript', 'mongodb', 'sql', 'rest api', 'git', 'docker', 'html', 'css']
+  },
+  'Frontend Developer': {
+    primary: ['react', 'vue', 'angular', 'javascript', 'typescript', 'html', 'css', 'sass', 'tailwind', 'figma', 'ui/ux', 'next.js', 'nextjs'],
+    secondary: ['redux', 'webpack', 'vite', 'responsive design', 'accessibility', 'a11y', 'jest', 'cypress', 'web performance'],
+    benchmarks: ['react', 'javascript', 'typescript', 'html5', 'css3', 'responsive design', 'git', 'webpack', 'figma', 'rest api']
+  },
+  'Backend Developer': {
+    primary: ['node', 'express', 'python', 'django', 'flask', 'fastapi', 'java', 'spring boot', 'golang', 'c#', '.net', 'microservices', 'rest api'],
+    secondary: ['postgresql', 'mysql', 'mongodb', 'redis', 'kafka', 'rabbitmq', 'docker', 'kubernetes', 'aws', 'graphql', 'system design'],
+    benchmarks: ['rest api', 'sql', 'microservices', 'docker', 'git', 'redis', 'database design', 'authentication', 'testing']
+  },
+  'AI / Machine Learning Engineer': {
+    primary: ['machine learning', 'deep learning', 'pytorch', 'tensorflow', 'keras', 'nlp', 'computer vision', 'llm', 'genai', 'python', 'scikit-learn'],
+    secondary: ['langchain', 'huggingface', 'transformers', 'pandas', 'numpy', 'scipy', 'rag', 'vector database', 'fine-tuning', 'mlops'],
+    benchmarks: ['python', 'pytorch', 'tensorflow', 'machine learning', 'deep learning', 'scikit-learn', 'pandas', 'numpy', 'data modeling']
+  },
+  'Data Scientist': {
+    primary: ['data science', 'python', 'r', 'pandas', 'numpy', 'statistics', 'exploratory data analysis', 'eda', 'predictive modeling', 'machine learning'],
+    secondary: ['sql', 'tableau', 'power bi', 'matplotlib', 'seaborn', 'jupyter', 'hypothesis testing', 'a/b testing', 'bigquery'],
+    benchmarks: ['python', 'sql', 'statistics', 'pandas', 'machine learning', 'data visualization', 'tableau', 'hypothesis testing']
+  },
+  'Data Engineer': {
+    primary: ['data engineer', 'etl', 'data pipeline', 'apache spark', 'spark', 'kafka', 'airflow', 'snowflake', 'databricks', 'hadoop', 'bigquery'],
+    secondary: ['sql', 'python', 'scala', 'dbt', 'data warehouse', 'data lake', 'aws glue', 'redshift', 'postgresql'],
+    benchmarks: ['sql', 'python', 'etl', 'spark', 'kafka', 'airflow', 'snowflake', 'data pipeline', 'data warehouse']
+  },
+  'Cloud & DevOps Engineer': {
+    primary: ['devops', 'docker', 'kubernetes', 'terraform', 'ci/cd', 'aws', 'azure', 'gcp', 'jenkins', 'ansible', 'helm', 'cloudformation'],
+    secondary: ['linux', 'bash', 'prometheus', 'grafana', 'gitops', 'argocd', 'security', 'monitoring', 'site reliability', 'sre'],
+    benchmarks: ['docker', 'kubernetes', 'terraform', 'ci/cd', 'aws', 'linux', 'git', 'monitoring', 'infrastructure as code']
+  },
+  'Mobile Developer': {
+    primary: ['react native', 'flutter', 'android', 'ios', 'swift', 'kotlin', 'mobile app', 'xcode', 'android studio'],
+    secondary: ['dart', 'objective-c', 'app store', 'google play', 'push notifications', 'mobile ui', 'sqlite'],
+    benchmarks: ['react native', 'flutter', 'swift', 'kotlin', 'mobile development', 'api integration', 'git']
+  },
+  'Cybersecurity Engineer': {
+    primary: ['cybersecurity', 'information security', 'penetration testing', 'vulnerability', 'firewall', 'siem', 'soc', 'owasp', 'encryption'],
+    secondary: ['wireshark', 'burp suite', 'metasploit', 'network security', 'incident response', 'cissp', 'ceh', 'zero trust'],
+    benchmarks: ['network security', 'vulnerability assessment', 'incident response', 'firewalls', 'encryption', 'compliance']
+  },
+  'QA & Automation Engineer': {
+    primary: ['qa', 'quality assurance', 'selenium', 'cypress', 'playwright', 'automation testing', 'test automation', 'unit testing', 'test cases'],
+    secondary: ['jest', 'mocha', 'postman', 'api testing', 'load testing', 'jmeter', 'bug tracking', 'jira', 'ci/cd'],
+    benchmarks: ['selenium', 'cypress', 'automation testing', 'test cases', 'api testing', 'postman', 'git', 'jira']
+  },
+  'UI/UX Designer': {
+    primary: ['ui/ux', 'user experience', 'user interface', 'figma', 'wireframing', 'prototyping', 'user research', 'usability testing'],
+    secondary: ['design systems', 'adobe xd', 'sketch', 'interaction design', 'information architecture', 'heuristic evaluation'],
+    benchmarks: ['figma', 'wireframing', 'prototyping', 'user research', 'design systems', 'usability testing']
+  },
+  'Software Engineer': {
+    primary: ['software engineer', 'data structures', 'algorithms', 'object-oriented', 'oop', 'system design', 'git', 'design patterns'],
+    secondary: ['java', 'c++', 'python', 'c#', 'unit testing', 'code review', 'agile', 'scrum', 'sql', 'linux'],
+    benchmarks: ['data structures', 'algorithms', 'git', 'oop', 'problem solving', 'unit testing', 'sql', 'agile']
+  }
+};
+
+const ALL_TECH_SKILLS = [
+  // Languages
+  'javascript', 'typescript', 'python', 'java', 'c++', 'c#', 'golang', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'sql', 'r', 'dart', 'scala', 'bash', 'shell',
+  // Frontend
+  'react', 'next.js', 'nextjs', 'vue', 'angular', 'svelte', 'html', 'html5', 'css', 'css3', 'sass', 'tailwind', 'bootstrap', 'material-ui', 'redux', 'zustand', 'webpack', 'vite',
+  // Backend & APIs
+  'node.js', 'node', 'express', 'nest.js', 'nestjs', 'django', 'flask', 'fastapi', 'spring boot', 'spring', 'asp.net', 'graphql', 'rest api', 'grpc', 'microservices', 'websockets',
+  // Databases
+  'mongodb', 'postgresql', 'postgres', 'mysql', 'sqlite', 'redis', 'elasticsearch', 'cassandra', 'dynamodb', 'oracle', 'firebase', 'supabase', 'prisma',
+  // Cloud & DevOps
+  'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'terraform', 'ci/cd', 'jenkins', 'github actions', 'gitlab ci', 'linux', 'nginx', 'apache', 'ansible',
+  // AI & Data
+  'machine learning', 'deep learning', 'pytorch', 'tensorflow', 'keras', 'pandas', 'numpy', 'scikit-learn', 'nlp', 'computer vision', 'spark', 'kafka', 'airflow', 'snowflake', 'bigquery',
+  // Testing & Tools
+  'git', 'github', 'gitlab', 'jira', 'figma', 'postman', 'jest', 'cypress', 'playwright', 'selenium', 'agile', 'scrum'
+];
+
+const POWER_ACTION_VERBS = [
+  'accelerated', 'achieved', 'architected', 'automated', 'built', 'centralized', 'championed', 'collaborated',
+  'conceptualized', 'consolidated', 'constructed', 'decreased', 'delivered', 'deployed', 'designed', 'developed',
+  'devised', 'doubled', 'eliminated', 'engineered', 'enhanced', 'established', 'executed', 'expanded', 'expedited',
+  'formulated', 'generated', 'guided', 'implemented', 'improved', 'increased', 'initiated', 'innovated', 'integrated',
+  'launched', 'led', 'managed', 'maximized', 'mentored', 'migrated', 'modernized', 'optimized', 'orchestrated',
+  'overhauled', 'pioneered', 'reduced', 'refactored', 'resolved', 'restructured', 'revamped', 'scaled', 'slashed',
+  'spearheaded', 'streamlined', 'strengthened', 'transformed', 'upgraded'
+];
+
+const WEAK_PASSIVE_PHRASES = [
+  'responsible for', 'worked on', 'helped with', 'assisted in', 'handled', 'tasked with', 'participated in',
+  'involved in', 'duties included', 'was part of', 'familiar with', 'did', 'attempted'
+];
+
 function smartAnalyzeResume(text, fileName) {
-  const t   = text || '';
-  const low = t.toLowerCase();
-  const words = t.split(/\s+/).filter(Boolean);
+  const rawText = (text || '').trim();
+  const lowText = rawText.toLowerCase();
+  const lines   = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const words   = rawText.split(/\s+/).filter(Boolean);
   const wordCount = words.length;
 
-  // ── 1. Detect Role / Domain ──────────────────────────────────────────────
-  const roleSignals = {
-    'Full Stack Developer':     ['react','node','express','mongodb','fullstack','full-stack','full stack','nextjs','vue','angular'],
-    'Frontend Developer':       ['react','html','css','javascript','typescript','webpack','sass','tailwind','figma','ui'],
-    'Backend Developer':        ['node','express','django','flask','spring','java','golang','api','microservices','rest'],
-    'Data Scientist':           ['python','machine learning','tensorflow','pytorch','pandas','numpy','data science','ml','nlp'],
-    'Data Engineer':            ['spark','hadoop','kafka','airflow','etl','pipeline','bigquery','snowflake','dbt'],
-    'DevOps Engineer':          ['docker','kubernetes','terraform','ci/cd','jenkins','ansible','aws','azure','gcp'],
-    'Mobile Developer':         ['android','ios','swift','kotlin','react native','flutter','xcode'],
-    'Database Administrator':   ['sql','postgresql','mysql','oracle','mongodb','dba','database','indexing','query'],
-    'Security Engineer':        ['security','penetration','firewall','vulnerability','siem','cissp','owasp'],
-    'Product Manager':          ['product','roadmap','stakeholder','sprint','agile','kpi','user story'],
-    'Software Engineer':        ['software','algorithm','data structure','system design','oop','git','code review'],
-  };
+  // ── 1. Candidate Info Extraction ───────────────────────────────────────────
+  let candidateName = '';
+  for (const line of lines.slice(0, 5)) {
+    const clean = line.replace(/[^a-zA-Z\s]/g, '').trim();
+    const isHeaderWord = /resume|curriculum|vitae|page|contact|email|profile|phone/i.test(clean);
+    if (clean.length >= 3 && clean.length <= 35 && clean.split(/\s+/).length >= 2 && clean.split(/\s+/).length <= 4 && !isHeaderWord) {
+      candidateName = clean.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      break;
+    }
+  }
+  if (!candidateName && fileName) {
+    const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').replace(/resume|cv/gi, '').trim();
+    if (cleanFileName.length >= 3) {
+      candidateName = cleanFileName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+  if (!candidateName) candidateName = 'Candidate';
 
-  let detectedRole = 'Software Engineer';
-  let maxMatches = 0;
-  for (const [role, signals] of Object.entries(roleSignals)) {
-    const matches = signals.filter(s => low.includes(s)).length;
-    if (matches > maxMatches) { maxMatches = matches; detectedRole = role; }
+  const emailMatch    = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const phoneMatch    = rawText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+?\d{10,14}/);
+  const linkedinMatch = lowText.includes('linkedin.com') || lowText.includes('linkedin');
+  const githubMatch   = lowText.includes('github.com') || lowText.includes('github');
+  const portfolioMatch= /portfolio|website|vercel\.app|netlify\.app|\.dev|\.me|\.io/i.test(rawText);
+
+  // ── 2. Role & Seniority Detection ──────────────────────────────────────────
+  let detectedRole = 'Full Stack Developer';
+  let highestRoleScore = 0;
+
+  for (const [role, config] of Object.entries(ROLE_DICTIONARY)) {
+    let roleScore = 0;
+    config.primary.forEach(kw => {
+      if (lowText.includes(kw)) roleScore += 3;
+    });
+    config.secondary.forEach(kw => {
+      if (lowText.includes(kw)) roleScore += 1;
+    });
+
+    if (roleScore > highestRoleScore) {
+      highestRoleScore = roleScore;
+      detectedRole = role;
+    }
   }
 
-  // ── 2. Contact Info Detection ────────────────────────────────────────────
-  const hasEmail    = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(t);
-  const hasPhone    = /(\+?[\d][\d\s\-().]{7,}\d)/.test(t);
-  const hasLinkedin = /linkedin\.com\//i.test(t) || /linkedin/i.test(t);
-  const hasGithub   = /github\.com\//i.test(t) || /github/i.test(t);
-  const hasPortfolio= /portfolio|website|netlify|vercel|\.io|\.dev|\.me/i.test(t);
+  // Detect Experience Level
+  let experienceLevel = 'Mid-Level Professional (2-5 yrs)';
+  const seniorSignals = /senior|lead|principal|architect|staff engineer|director|head of|manager|7\+|8\+|10\+/i.test(rawText);
+  const fresherSignals = /fresher|intern|internship|student|entry level|graduate|b\.tech|b\.e|expected graduation|currently pursuing|bachelor of|final year/i.test(rawText);
 
-  // ── 3. Section Detection ─────────────────────────────────────────────────
-  const hasSummary     = /summary|objective|profile|about me|overview/i.test(t);
-  const hasExperience  = /experience|employment|work history|professional|internship/i.test(t);
-  const hasEducation   = /education|university|college|degree|bachelor|master|diploma|b\.e|b\.tech|m\.tech/i.test(t);
-  const hasSkills      = /skills|technologies|tech stack|competencies|expertise/i.test(t);
-  const hasProjects    = /project|portfolio|github|built|developed|created|implemented/i.test(t);
-  const hasCertifications = /certif|aws certified|google certified|microsoft certified|credential/i.test(t);
-  const hasAchievements   = /achiev|award|honor|recognition|won|winner|rank|scholarship/i.test(t);
+  if (seniorSignals && !fresherSignals) {
+    experienceLevel = 'Senior / Lead Specialist (5+ yrs)';
+  } else if (fresherSignals && !seniorSignals) {
+    experienceLevel = 'Early Career / Graduate (0-2 yrs)';
+  }
 
-  // ── 4. Quality Signals ───────────────────────────────────────────────────
-  const hasMetrics     = /\d+%|\d+x|\d+\+|\$[\d]+|[\d]+ (users|clients|projects|team|million|thousand)/i.test(t);
-  const hasActionVerbs = /\b(developed|designed|implemented|built|created|led|managed|optimized|improved|delivered|deployed|architected|scaled|reduced|increased|launched|collaborated|mentored|automated|migrated|integrated)\b/i.test(t);
-  const isTooShort     = wordCount < 150;
-  const isTooLong      = wordCount > 1200;
+  // ── 3. Skills Analysis ─────────────────────────────────────────────────────
+  const foundKeywords = [];
+  ALL_TECH_SKILLS.forEach(skill => {
+    const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(^|[^a-zA-Z0-9_#+])${escaped}([^a-zA-Z0-9_#+]|$)`, 'i');
+    if (regex.test(rawText)) {
+      foundKeywords.push(skill);
+    }
+  });
 
-  // ── 5. Keyword Analysis ──────────────────────────────────────────────────
-  const ALL_TECH = [
-    // Languages
-    'javascript','typescript','python','java','c++','c#','ruby','php','golang','rust','swift','kotlin','scala',
-    // Frontend
-    'react','angular','vue','nextjs','html','css','sass','tailwind','webpack','vite','redux',
-    // Backend
-    'node','express','django','flask','spring','fastapi','graphql','rest api','microservices',
-    // Databases
-    'sql','mysql','postgresql','mongodb','redis','elasticsearch','firebase','dynamodb','cassandra',
-    // Cloud & DevOps
-    'aws','azure','gcp','docker','kubernetes','terraform','jenkins','github actions','ci/cd','linux',
-    // Tools
-    'git','jira','figma','postman','vs code','intellij',
-    // AI/ML
-    'machine learning','tensorflow','pytorch','pandas','numpy','scikit-learn','nlp','computer vision',
-    // Soft
-    'agile','scrum','leadership','communication','teamwork','problem solving','analytical'
-  ];
+  const targetBenchmarks = ROLE_DICTIONARY[detectedRole]?.benchmarks || ROLE_DICTIONARY['Software Engineer'].benchmarks;
+  const missingKeywords = targetBenchmarks.filter(bm => !foundKeywords.some(fk => fk.toLowerCase() === bm.toLowerCase()));
 
-  const foundKeywords   = ALL_TECH.filter(k => low.includes(k));
-  const kwByRole = {
-    'Full Stack Developer':   ['react','node','express','mongodb','sql','rest api','git','docker'],
-    'Frontend Developer':     ['react','typescript','css','webpack','figma','accessibility','testing'],
-    'Backend Developer':      ['rest api','microservices','sql','docker','redis','message queue','authentication'],
-    'Data Scientist':         ['machine learning','python','pandas','tensorflow','statistics','sql','visualization'],
-    'DevOps Engineer':        ['docker','kubernetes','terraform','ci/cd','monitoring','linux','scripting'],
-    'Software Engineer':      ['data structures','algorithms','oop','design patterns','git','testing','rest api'],
-  };
-  const roleKeywords     = kwByRole[detectedRole] || kwByRole['Software Engineer'];
-  const missingKeywords  = roleKeywords.filter(k => !low.includes(k)).slice(0, 8);
+  // ── 4. Impact & Quantification ─────────────────────────────────────────────
+  const metricMatches = rawText.match(/\b\d+(\.\d+)?%|\b\d+x\b|\$[\d,]+|\b\d+\s*\+?(\s*(users|clients|customers|requests|transactions|million|billion|thousand|k|qps|ms|stars))\b/gi) || [];
+  const metricsCount = metricMatches.length;
 
-  // ── 6. Scoring ───────────────────────────────────────────────────────────
-  let score    = 0;
-  let atsScore = 0;
+  const foundPowerVerbs = [];
+  POWER_ACTION_VERBS.forEach(verb => {
+    const regex = new RegExp(`\\b${verb}\\b`, 'i');
+    if (regex.test(rawText)) foundPowerVerbs.push(verb);
+  });
 
-  // Contact info (20 pts)
-  if (hasEmail)    { score += 8;  atsScore += 8;  }
-  if (hasPhone)    { score += 6;  atsScore += 6;  }
-  if (hasLinkedin) { score += 4;  atsScore += 4;  }
-  if (hasGithub)   { score += 2;  atsScore += 2;  }
+  const foundWeakPhrases = [];
+  WEAK_PASSIVE_PHRASES.forEach(phrase => {
+    if (lowText.includes(phrase)) foundWeakPhrases.push(phrase);
+  });
 
-  // Sections (30 pts)
-  if (hasSummary)    { score += 5;  atsScore += 4;  }
-  if (hasExperience) { score += 8;  atsScore += 10; }
-  if (hasEducation)  { score += 6;  atsScore += 6;  }
-  if (hasSkills)     { score += 6;  atsScore += 8;  }
-  if (hasProjects)   { score += 5;  atsScore += 4;  }
+  // ── 5. Section Presence Analysis ───────────────────────────────────────────
+  const hasSummary     = /summary|objective|profile|about me|professional summary/i.test(lowText);
+  const hasExperience  = /experience|employment|work history|professional experience|internship/i.test(lowText);
+  const hasEducation   = /education|academic|degree|university|college|bachelor|master|b\.tech|b\.e|b\.sc|m\.sc/i.test(lowText);
+  const hasSkills      = /skills|technical skills|technologies|tech stack|tools|competencies/i.test(lowText);
+  const hasProjects    = /project|personal projects|portfolio projects|academic projects/i.test(lowText);
+  const hasCerts       = /certif|credential|license|aws certified|azure certified|google certified/i.test(lowText);
 
-  // Keywords (20 pts)
-  const kwScore = Math.min(20, Math.round((foundKeywords.length / 15) * 20));
-  score    += kwScore;
-  atsScore += Math.min(20, kwScore + 2);
+  // ── 6. Realistic ATS Scoring Formulation ───────────────────────────────────
+  // A: Contact & Header (20 pts)
+  let contactScore = 0;
+  if (emailMatch)    contactScore += 6;
+  if (phoneMatch)    contactScore += 5;
+  if (linkedinMatch) contactScore += 5;
+  if (githubMatch || portfolioMatch) contactScore += 4;
 
-  // Quality (15 pts)
-  if (hasMetrics)     { score += 7;  }
-  if (hasActionVerbs) { score += 5;  }
-  if (hasCertifications) { score += 3; atsScore += 3; }
-  if (hasAchievements)   { score += 3; }
+  // B: Core Sections (25 pts)
+  let sectionScore = 0;
+  if (hasExperience) sectionScore += 8;
+  if (hasEducation)  sectionScore += 6;
+  if (hasSkills)     sectionScore += 5;
+  if (hasProjects)   sectionScore += 4;
+  if (hasSummary)    sectionScore += 2;
 
-  // Word count (15 pts)
-  if (!isTooShort && !isTooLong) { score += 10; atsScore += 5; }
-  else if (wordCount >= 80)      { score += 5;  atsScore += 2; }
+  // C: Impact & Metrics (25 pts)
+  let impactScore = 0;
+  if (metricsCount >= 5)       impactScore += 15;
+  else if (metricsCount >= 3)  impactScore += 11;
+  else if (metricsCount >= 1)  impactScore += 6;
 
-  score    = Math.min(100, Math.max(10, score));
-  atsScore = Math.min(100, Math.max(10, atsScore));
+  if (foundPowerVerbs.length >= 8)      impactScore += 10;
+  else if (foundPowerVerbs.length >= 4) impactScore += 7;
+  else if (foundPowerVerbs.length >= 1) impactScore += 4;
 
-  // ── 7. Strengths ─────────────────────────────────────────────────────────
+  // D: Technical Skill Match (20 pts)
+  let skillScore = 0;
+  const matchRatio = Math.min(1, foundKeywords.length / 12);
+  skillScore = Math.round(matchRatio * 20);
+
+  // E: Length & Formatting Health (10 pts)
+  let lengthScore = 0;
+  if (wordCount >= 300 && wordCount <= 850) {
+    lengthScore = 10;
+  } else if (wordCount >= 180 && wordCount <= 1200) {
+    lengthScore = 7;
+  } else if (wordCount > 0) {
+    lengthScore = 3;
+  }
+
+  // Penalties
+  let penalty = 0;
+  if (wordCount < 120) penalty += 25;
+  if (!emailMatch && !phoneMatch) penalty += 15;
+  if (foundWeakPhrases.length > 2) penalty += 4;
+
+  let overallScore = Math.max(15, Math.min(98, contactScore + sectionScore + impactScore + skillScore + lengthScore - penalty));
+  let atsScore     = Math.max(15, Math.min(99, Math.round((contactScore * 0.25 + sectionScore * 0.35 + skillScore * 0.25 + lengthScore * 0.15) * 1.05)));
+
+  // ── 7. Dynamic Strengths ───────────────────────────────────────────────────
   const strengths = [];
-  if (hasEmail && hasPhone)       strengths.push('Complete contact information with email and phone number');
-  else if (hasEmail)              strengths.push('Professional email address is present');
-  if (hasLinkedin)                strengths.push('LinkedIn profile included — great for recruiter outreach');
-  if (hasGithub)                  strengths.push('GitHub profile linked — demonstrates active coding practice');
-  if (hasExperience)              strengths.push('Work experience section is well-structured and present');
-  if (hasEducation)               strengths.push('Educational background is clearly stated');
-  if (hasSkills)                  strengths.push('Dedicated skills section makes keyword scanning easy for ATS');
-  if (hasProjects)                strengths.push('Project section demonstrates hands-on practical experience');
-  if (hasMetrics)                 strengths.push('Quantified achievements strengthen credibility (numbers detected)');
-  if (hasActionVerbs)             strengths.push('Strong action verbs used to describe responsibilities');
-  if (foundKeywords.length >= 10) strengths.push(`Good technical keyword density — ${foundKeywords.length} relevant keywords detected`);
-  if (hasCertifications)          strengths.push('Certifications show commitment to continuous learning');
-  if (!isTooShort && !isTooLong)  strengths.push(`Ideal resume length (${wordCount} words) — concise yet detailed`);
-  if (detectedRole !== 'Software Engineer') strengths.push(`Resume aligns well with ${detectedRole} positions`);
+  if (metricsCount >= 3) {
+    strengths.push(`High quantitative impact: detected ${metricsCount} measurable outcomes and metrics (%, $, scale stats).`);
+  }
+  if (foundPowerVerbs.length >= 5) {
+    strengths.push(`Strong active phrasing: utilizes ${foundPowerVerbs.length} high-impact power verbs (e.g., ${foundPowerVerbs.slice(0, 3).join(', ')}).`);
+  }
+  if (foundKeywords.length >= 8) {
+    strengths.push(`Strong domain keyword density: matched ${foundKeywords.length} core technical competencies for ${detectedRole}.`);
+  }
+  if (linkedinMatch && githubMatch) {
+    strengths.push('Complete professional footprint: includes both LinkedIn and GitHub profile links for recruiter evaluation.');
+  } else if (githubMatch) {
+    strengths.push('Code verification: GitHub repository link present, allowing engineering managers to inspect code quality.');
+  } else if (linkedinMatch) {
+    strengths.push('Professional networking: LinkedIn profile linked, aiding recruiter background checks.');
+  }
+  if (hasProjects) {
+    strengths.push('Hands-on project validation: distinct projects showcase practical application of your tech stack.');
+  }
+  if (hasCerts) {
+    strengths.push('Industry credentials: certifications included demonstrating verified domain competency.');
+  }
+  if (wordCount >= 350 && wordCount <= 800) {
+    strengths.push(`Optimal document length (${wordCount} words): concise 1-2 page structure preferred by ATS parsers.`);
+  }
 
-  // ── 8. Improvements ──────────────────────────────────────────────────────
+  // ── 8. Real-World Actionable Improvements ──────────────────────────────────
   const improvements = [];
-  if (!hasEmail)     improvements.push('Add a professional email address at the top of your resume');
-  if (!hasPhone)     improvements.push('Include a phone number so recruiters can contact you directly');
-  if (!hasLinkedin)  improvements.push('Add your LinkedIn profile URL — 87% of recruiters use it to screen candidates');
-  if (!hasGithub && ['Full Stack Developer','Frontend Developer','Backend Developer','Software Engineer','DevOps Engineer'].includes(detectedRole))
-                     improvements.push('Add your GitHub profile to showcase your code and projects');
-  if (!hasSummary)   improvements.push('Add a 2-3 sentence professional summary tailored to your target role');
-  if (!hasMetrics)   improvements.push('Quantify your achievements (e.g. "Reduced load time by 40%", "Led a team of 5")');
-  if (!hasProjects)  improvements.push('Add a Projects section with links to GitHub repos or live demos');
-  if (isTooShort)    improvements.push(`Resume is too short (${wordCount} words) — add more detail to experience and projects`);
-  if (isTooLong)     improvements.push(`Resume is long (${wordCount} words) — condense to 1-2 pages for best results`);
-  if (missingKeywords.length > 3) improvements.push(`Add missing role-specific keywords: ${missingKeywords.slice(0,4).join(', ')}`);
-  if (!hasActionVerbs) improvements.push('Use strong action verbs: Developed, Implemented, Optimized, Designed, Led, Deployed');
-  if (!hasCertifications && ['Data Scientist','DevOps Engineer','Cloud','Security'].some(r => detectedRole.includes(r)))
-                     improvements.push('Consider adding relevant certifications (AWS, GCP, Azure) to stand out');
+  if (metricsCount < 3) {
+    improvements.push('Quantify accomplishments: Add numbers, percentages, and metrics to your bullet points (e.g., "Boosted API response time by 35%").');
+  }
+  if (missingKeywords.length > 0) {
+    improvements.push(`Incorporate key ${detectedRole} requirements: Consider adding in-demand skills such as ${missingKeywords.slice(0, 3).join(', ')}.`);
+  }
+  if (foundWeakPhrases.length > 0) {
+    improvements.push(`Replace passive phrasing (${foundWeakPhrases.slice(0, 2).map(p => `"${p}"`).join(', ')}) with power verbs like "Architected", "Spearheaded", or "Optimized".`);
+  }
+  if (!linkedinMatch) {
+    improvements.push('Add LinkedIn URL: Over 85% of technical recruiters cross-reference LinkedIn during screening.');
+  }
+  if (!githubMatch && ['Full Stack Developer', 'Frontend Developer', 'Backend Developer', 'Software Engineer'].includes(detectedRole)) {
+    improvements.push('Link your GitHub profile: Crucial for software engineers to prove coding consistency and open-source contributions.');
+  }
+  if (!hasSummary) {
+    improvements.push(`Include a 2-3 line Professional Summary at the top tailored specifically for ${detectedRole} opportunities.`);
+  }
+  if (wordCount < 250) {
+    improvements.push(`Expand resume content: At ${wordCount} words, your resume is brief. Aim for 400-750 words with detailed project scope and responsibilities.`);
+  }
+  if (wordCount > 1000) {
+    improvements.push(`Condense word count: At ${wordCount} words, your resume may exceed 2 pages. Focus on high-impact recent contributions.`);
+  }
 
-  // ── 9. ATS Tips tailored to detected role ────────────────────────────────
-  const atsTips = [
-    'Use standard section headings: "Experience", "Education", "Skills" — avoid creative names like "My Journey"',
-    `Include role-specific keywords from job postings for ${detectedRole} positions`,
-    'Keep formatting clean — no tables, columns, text boxes, headers, or footers (ATS can\'t read them)',
-    'Save your resume as a plain PDF or .docx — avoid image-based PDFs',
-    'Name your file professionally: FirstName_LastName_Resume.pdf',
-    'Avoid using abbreviations without spelling them out first (e.g. "ML (Machine Learning)")',
-    'Tailor your resume for each application by matching keywords from the job description'
+  // ── 9. Bullet Point Rewrites (Google X-Y-Z Method) ──────────────────────────
+  const bulletRewrites = [
+    {
+      before: `Worked on backend APIs using ${foundKeywords[0] || 'Node.js'} and updated the database.`,
+      after: `Architected scalable RESTful microservices using ${foundKeywords[0] || 'Node.js'}, reducing query latency by 45% for 50,000+ active users.`
+    },
+    {
+      before: `Responsible for building front-end components and fixing bugs.`,
+      after: `Engineered responsive, modular UI components in ${foundKeywords.find(k => ['react', 'vue', 'angular'].includes(k)) || 'React'}, boosting page load speed by 30% and test coverage to 88%.`
+    }
   ];
 
-  // ── 10. Summary ──────────────────────────────────────────────────────────
-  const grade = score >= 80 ? 'excellent' : score >= 65 ? 'good' : score >= 45 ? 'fair' : 'needs improvement';
-  const summary = `Your resume scored ${score}/100 with ${atsScore}% ATS compatibility — ${grade} overall. `
-    + `Detected ${foundKeywords.length} relevant keywords for a ${detectedRole} profile. `
-    + (strengths.length > improvements.length
-        ? `Strong foundation with ${strengths.length} positive signals. Minor refinements will make it exceptional.`
-        : `Focus on ${improvements.slice(0, 2).map(i => i.split(' ').slice(0, 4).join(' ')).join(' and ')} to significantly boost your score.`);
+  // ── 10. ATS Section Breakdown ──────────────────────────────────────────────
+  const sectionBreakdown = [
+    { name: 'Contact & Links', status: (emailMatch && phoneMatch && (linkedinMatch || githubMatch)) ? 'pass' : 'warning', details: `${emailMatch ? 'Email ✓ ' : 'Email ✗ '}${phoneMatch ? 'Phone ✓ ' : 'Phone ✗ '}${linkedinMatch ? 'LinkedIn ✓ ' : ''}${githubMatch ? 'GitHub ✓ ' : ''}` },
+    { name: 'Work Experience', status: hasExperience ? 'pass' : 'warning', details: hasExperience ? `${metricsCount} quantified metrics found` : 'No clear Experience header' },
+    { name: 'Technical Skills', status: foundKeywords.length >= 6 ? 'pass' : 'warning', details: `${foundKeywords.length} skills matched for ${detectedRole}` },
+    { name: 'Projects', status: hasProjects ? 'pass' : 'warning', details: hasProjects ? 'Projects section detected' : 'Add 2-3 featured projects' },
+    { name: 'Education', status: hasEducation ? 'pass' : 'warning', details: hasEducation ? 'Degree & academic history found' : 'Education details missing' },
+    { name: 'Professional Summary', status: hasSummary ? 'pass' : 'warning', details: hasSummary ? 'Summary present' : 'Recommend adding a targeted 3-line summary' }
+  ];
+
+  // ── 11. Tailored ATS Tips ──────────────────────────────────────────────────
+  const atsTips = [
+    `Target role optimization: Ensure "${detectedRole}" or your exact target job title appears verbatim in your headline and summary.`,
+    'Single-column structure: ATS parsing software can misread multi-column grids or creative sidebars. Stick to standard clean vertical hierarchy.',
+    'Standardize dates & headings: Use standard formats like "Jan 2022 - Present" and conventional headers ("Experience", "Skills", "Education").',
+    'Action + Context + Impact: Format every work experience bullet with the formula: [Power Verb] + [What you built] + [Quantified Business Outcome].',
+    'Plain text PDF formatting: Ensure text in your PDF is selectable (not flattened into an image) so ATS crawlers can parse every token.'
+  ];
+
+  // ── 12. Dynamic Executive Summary ──────────────────────────────────────────
+  const scoreCategory = overallScore >= 85 ? 'Exceptional' : overallScore >= 72 ? 'Strong' : overallScore >= 55 ? 'Competitive' : 'Needs Optimization';
+  const summary = `${candidateName ? candidateName + ' — ' : ''}${scoreCategory} ${detectedRole} profile (${experienceLevel}). `
+    + `Your resume scored ${overallScore}/100 with an ATS Compatibility Rating of ${atsScore}%. `
+    + `Extracted ${foundKeywords.length} matching technical competencies with ${metricsCount} quantified achievements across ${wordCount} words. `
+    + (improvements.length > 0 ? `Key priority: ${improvements[0]}` : 'Strong candidate presentation ready for submission.');
 
   return {
-    score,
+    score: overallScore,
     atsScore,
-    overallScore: score,
+    overallScore,
+    candidateName,
     detectedRole,
-    strengths:        strengths.slice(0, 6),
-    improvements:     improvements.slice(0, 6),
-    foundKeywords:    foundKeywords.slice(0, 20),
-    missingKeywords:  missingKeywords.slice(0, 8),
+    experienceLevel,
+    wordCount,
+    metricsCount,
+    strengths: strengths.slice(0, 6),
+    improvements: improvements.slice(0, 6),
+    foundKeywords: foundKeywords.slice(0, 24),
+    missingKeywords: missingKeywords.slice(0, 8),
+    sectionBreakdown,
+    bulletRewrites,
     atsTips,
     summary
   };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// POST /api/resume/upload  — Upload + Smart AI analyze (works for guests)
+// POST /api/resume/upload  — Upload + Smart AI analyze (works for guests & users)
 // ══════════════════════════════════════════════════════════════════════════════
 router.post('/upload', optionalAuth, upload.single('resume'), async (req, res) => {
   if (!req.file) {
@@ -290,12 +480,13 @@ router.post('/upload', optionalAuth, upload.single('resume'), async (req, res) =
   try {
     console.log('📄 Extracting text from:', req.file.originalname);
     const text = await extractText(filePath);
-    console.log(`📝 Extracted ${text ? text.split(/\s+/).length : 0} words`);
+    const wordCount = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    console.log(`📝 Extracted ${wordCount} words from ${req.file.originalname}`);
 
     const analysis = smartAnalyzeResume(text, req.file.originalname);
     analysis.analyzedAt   = new Date();
     analysis.overallScore = analysis.score;
-    console.log(`✅ Analysis complete — Score: ${analysis.score}, Role: ${analysis.detectedRole}`);
+    console.log(`✅ Analysis complete — Candidate: "${analysis.candidateName}", Score: ${analysis.score}, Role: ${analysis.detectedRole}`);
 
     // Persist for logged-in users
     if (req.user?._id) {
@@ -353,46 +544,49 @@ router.get('/report/pdf', optionalAuth, async (req, res) => {
 
     if (!PDFDocument) return res.status(500).json({ message: 'PDF generation not available.' });
 
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ margin: 40 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=Resume_Analysis_Report.pdf');
     doc.pipe(res);
 
-    doc.fontSize(24).font('Helvetica-Bold').text('Resume Analysis Report', { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(12).font('Helvetica').text(`Generated: ${new Date().toLocaleDateString()}`, { align: 'center' });
-    if (analysis.detectedRole) doc.fontSize(12).text(`Detected Role: ${analysis.detectedRole}`, { align: 'center' });
-    doc.moveDown(2);
-
-    doc.fontSize(18).font('Helvetica-Bold').text('Overall Score');
-    doc.fontSize(36).text(`${analysis.score}/100`, { align: 'center' });
-    doc.fontSize(14).text(`ATS Compatibility: ${analysis.atsScore}%`, { align: 'center' });
+    doc.fontSize(22).font('Helvetica-Bold').text('Resume Analysis & ATS Audit Report', { align: 'center' });
+    doc.moveDown(0.4);
+    doc.fontSize(11).font('Helvetica').text(`Candidate: ${analysis.candidateName || 'Candidate'}  |  Generated: ${new Date().toLocaleDateString()}`, { align: 'center' });
+    if (analysis.detectedRole) {
+      doc.fontSize(11).text(`Target Domain: ${analysis.detectedRole} (${analysis.experienceLevel || 'Mid-Level'})`, { align: 'center' });
+    }
     doc.moveDown(1.5);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Summary');
-    doc.fontSize(12).font('Helvetica').text(analysis.summary || '');
-    doc.moveDown(1.5);
+    doc.fontSize(16).font('Helvetica-Bold').text('Executive Scores');
+    doc.moveDown(0.3);
+    doc.fontSize(28).font('Helvetica-Bold').fillColor('#4f46e5').text(`${analysis.score}/100`, { align: 'center' });
+    doc.fillColor('#1e293b').fontSize(12).font('Helvetica').text(`ATS Compatibility Match: ${analysis.atsScore}%`, { align: 'center' });
+    doc.moveDown(1.2);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Strengths');
-    doc.fontSize(12).font('Helvetica');
-    (analysis.strengths || []).forEach((s, i) => doc.text(`${i + 1}. ${s}`));
+    doc.fontSize(14).font('Helvetica-Bold').text('Executive Summary');
+    doc.fontSize(10).font('Helvetica').text(analysis.summary || '');
     doc.moveDown(1);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Areas for Improvement');
-    doc.fontSize(12).font('Helvetica');
-    (analysis.improvements || []).forEach((item, i) => doc.text(`${i + 1}. ${item}`));
+    doc.fontSize(14).font('Helvetica-Bold').text('Key Strengths');
+    doc.fontSize(10).font('Helvetica');
+    (analysis.strengths || []).forEach((s, i) => doc.text(`• ${s}`));
     doc.moveDown(1);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Keywords Found');
-    doc.fontSize(12).font('Helvetica').text((analysis.foundKeywords || []).join(', ') || 'None');
+    doc.fontSize(14).font('Helvetica-Bold').text('Actionable Improvements');
+    doc.fontSize(10).font('Helvetica');
+    (analysis.improvements || []).forEach((item, i) => doc.text(`• ${item}`));
     doc.moveDown(1);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('Missing Keywords');
-    doc.fontSize(12).font('Helvetica').text((analysis.missingKeywords || []).join(', ') || 'None');
+    doc.fontSize(14).font('Helvetica-Bold').text('Detected Keywords');
+    doc.fontSize(10).font('Helvetica').text((analysis.foundKeywords || []).join(', ') || 'None');
     doc.moveDown(1);
 
-    doc.fontSize(16).font('Helvetica-Bold').text('ATS Tips');
-    doc.fontSize(12).font('Helvetica');
+    doc.fontSize(14).font('Helvetica-Bold').text('Missing Role Keywords');
+    doc.fontSize(10).font('Helvetica').text((analysis.missingKeywords || []).join(', ') || 'None');
+    doc.moveDown(1);
+
+    doc.fontSize(14).font('Helvetica-Bold').text('ATS Optimization Tips');
+    doc.fontSize(10).font('Helvetica');
     (analysis.atsTips || []).forEach((t, i) => doc.text(`${i + 1}. ${t}`));
 
     doc.end();

@@ -5253,12 +5253,85 @@ input, textarea, select {
   gap: 0.75rem;
 }
 
+/* Candidate Profile Banner */
+.candidate-profile-banner {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 18px;
+  padding: 1.25rem 1.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.candidate-profile-details {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.candidate-avatar {
+  font-size: 2.2rem;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.candidate-meta {
+  flex: 1;
+}
+
+.candidate-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 0.4rem 0;
+  letter-spacing: -0.01em;
+}
+
+.candidate-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.c-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.role-tag {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.level-tag {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.words-tag, .metrics-tag {
+  background: rgba(148, 163, 184, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
 /* Score Hero */
 .score-hero {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
   border: 1px solid rgba(99, 102, 241, 0.25);
   border-radius: 22px;
-  padding: 2rem 2.5rem;
+  padding: 2rem 2.25rem;
   margin-bottom: 1.75rem;
 }
 
@@ -5279,42 +5352,65 @@ input, textarea, select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
-.score-ring-svg {
-  width: 100px;
-  height: 100px;
+/* Non-overlapping Circular Gauge */
+.score-gauge-box {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
   display: block;
 }
 
-.ring-bg {
+.gauge-bg {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.07);
-  stroke-width: 3;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 8;
 }
 
-.ring-fill {
+.gauge-fill {
   fill: none;
-  stroke-width: 3;
+  stroke-width: 8;
   stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  transition: stroke-dasharray 0.6s ease;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.ring-label {
-  fill: #f8fafc;
-  font-size: 0.65rem;
+.score-gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.gauge-score-value {
+  font-size: 1.75rem;
   font-weight: 800;
-  text-anchor: middle;
-  dominant-baseline: middle;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 0;
+  padding: 0;
 }
 
-.ring-sub {
-  fill: #94a3b8;
-  font-size: 0.3rem;
-  text-anchor: middle;
+.gauge-score-max {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  line-height: 1;
+  margin-top: 4px;
 }
 
 .ring-title {
@@ -5328,37 +5424,179 @@ input, textarea, select {
   font-weight: 800;
 }
 
-/* Quick Stats Pills */
+/* Quick Stats Grid */
 .score-quick-stats {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 1rem;
   flex: 1;
+  min-width: 280px;
 }
 
 .quick-stat-pill {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 0.85rem 1.25rem;
-  min-width: 90px;
+  padding: 0.9rem 1rem;
   text-align: center;
 }
 
 .qsp-num {
-  font-size: 1.6rem;
+  font-size: 1.65rem;
   font-weight: 800;
   line-height: 1.1;
+  margin-bottom: 0.25rem;
 }
 
 .qsp-lbl {
   font-size: 0.75rem;
   color: #94a3b8;
-  margin-top: 0.2rem;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Section Breakdown Card */
+.section-breakdown-card {
+  margin-bottom: 1.25rem;
+}
+
+.section-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+.health-item-card {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.health-item-card.status-pass {
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.health-item-card.status-warning {
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.health-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.health-item-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.health-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+}
+
+.badge-pass {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.health-item-details {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Bullet Rewrites Section */
+.bullet-rewrites-section {
+  margin-bottom: 1.25rem;
+}
+
+.bullet-rewrite-sub {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  margin: -0.25rem 0 1rem 0;
+  line-height: 1.4;
+}
+
+.rewrites-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.rewrite-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+}
+
+.rewrite-before, .rewrite-after {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rewrite-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.label-before {
+  color: #f87171;
+}
+
+.label-after {
+  color: #34d399;
+}
+
+.rewrite-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.rewrite-arrow {
+  color: #6366f1;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .rewrite-card {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .rewrite-arrow {
+    text-align: center;
+    transform: rotate(90deg);
+  }
 }
 
 /* Analysis Summary Callout */

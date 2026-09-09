@@ -238,41 +238,86 @@ const Resume = () => {
               </div>
             </div>
 
+            {/* Candidate Profile Card */}
+            <div className="candidate-profile-banner card">
+              <div className="candidate-profile-details">
+                <div className="candidate-avatar">👤</div>
+                <div className="candidate-meta">
+                  <h2 className="candidate-name">{analysis.candidateName || 'Candidate Profile'}</h2>
+                  <div className="candidate-tags">
+                    <span className="c-tag role-tag">🎯 {analysis.detectedRole || 'Software Professional'}</span>
+                    {analysis.experienceLevel && (
+                      <span className="c-tag level-tag">💼 {analysis.experienceLevel}</span>
+                    )}
+                    {analysis.wordCount > 0 && (
+                      <span className="c-tag words-tag">📝 {analysis.wordCount} words</span>
+                    )}
+                    {analysis.metricsCount !== undefined && (
+                      <span className="c-tag metrics-tag">📊 {analysis.metricsCount} quantified metrics</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Score Summary Hero */}
             <div className="score-hero card">
               <div className="score-hero-content">
                 <div className="score-ring-group">
-                  {/* Overall Score Ring */}
+                  {/* Overall Score Gauge */}
                   <div className="score-ring-wrap">
-                    <svg viewBox="0 0 36 36" className="score-ring-svg">
-                      <path className="ring-bg"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path className="ring-fill"
-                        style={{ stroke: scoreColor, strokeDasharray: `${analysis.score || 0}, 100` }}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <text x="18" y="19" className="ring-label">{analysis.score || 0}</text>
-                      <text x="18" y="24" className="ring-sub">/100</text>
-                    </svg>
+                    <div className="score-gauge-box">
+                      <svg viewBox="0 0 100 100" className="score-gauge-svg">
+                        <circle cx="50" cy="50" r="42" className="gauge-bg" />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          className="gauge-fill"
+                          style={{
+                            stroke: scoreColor,
+                            strokeDasharray: 263.89,
+                            strokeDashoffset: 263.89 - (263.89 * Math.min(100, Math.max(0, analysis.score || 0))) / 100
+                          }}
+                        />
+                      </svg>
+                      <div className="score-gauge-center">
+                        <span className="gauge-score-value" style={{ color: scoreColor }}>
+                          {analysis.score || 0}
+                        </span>
+                        <span className="gauge-score-max">/ 100</span>
+                      </div>
+                    </div>
                     <span className="ring-title">Overall Score</span>
                     <span className="ring-grade" style={{ color: scoreColor }}>
                       {getScoreLabel(analysis.score || 0)}
                     </span>
                   </div>
 
-                  {/* ATS Score Ring */}
+                  {/* ATS Score Gauge */}
                   <div className="score-ring-wrap">
-                    <svg viewBox="0 0 36 36" className="score-ring-svg">
-                      <path className="ring-bg"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path className="ring-fill"
-                        style={{ stroke: atsColor, strokeDasharray: `${analysis.atsScore || 0}, 100` }}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <text x="18" y="19" className="ring-label">{analysis.atsScore || 0}%</text>
-                    </svg>
+                    <div className="score-gauge-box">
+                      <svg viewBox="0 0 100 100" className="score-gauge-svg">
+                        <circle cx="50" cy="50" r="42" className="gauge-bg" />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          className="gauge-fill"
+                          style={{
+                            stroke: atsColor,
+                            strokeDasharray: 263.89,
+                            strokeDashoffset: 263.89 - (263.89 * Math.min(100, Math.max(0, analysis.atsScore || 0))) / 100
+                          }}
+                        />
+                      </svg>
+                      <div className="score-gauge-center">
+                        <span className="gauge-score-value" style={{ color: atsColor }}>
+                          {analysis.atsScore || 0}%
+                        </span>
+                        <span className="gauge-score-max">ATS Match</span>
+                      </div>
+                    </div>
                     <span className="ring-title">ATS Score</span>
                     <span className="ring-grade" style={{ color: atsColor }}>
                       {getScoreLabel(analysis.atsScore || 0)}
@@ -280,7 +325,7 @@ const Resume = () => {
                   </div>
                 </div>
 
-                {/* Keyword Stats */}
+                {/* Keyword Stats Grid */}
                 <div className="score-quick-stats">
                   <div className="quick-stat-pill">
                     <span className="qsp-num" style={{ color: '#10b981' }}>{(analysis.foundKeywords || []).length}</span>
@@ -308,6 +353,29 @@ const Resume = () => {
               </div>
             </div>
 
+            {/* Section Breakdown Health Check */}
+            {analysis.sectionBreakdown && analysis.sectionBreakdown.length > 0 && (
+              <div className="result-section card section-breakdown-card">
+                <div className="result-section-header">
+                  <span className="section-icon">📋</span>
+                  <h3>ATS Section Breakdown & Health</h3>
+                </div>
+                <div className="section-health-grid">
+                  {analysis.sectionBreakdown.map((sec, i) => (
+                    <div key={i} className={`health-item-card status-${sec.status}`}>
+                      <div className="health-item-top">
+                        <span className="health-item-name">{sec.name}</span>
+                        <span className={`health-badge badge-${sec.status}`}>
+                          {sec.status === 'pass' ? '✓ Passed' : '⚠ Optimize'}
+                        </span>
+                      </div>
+                      <p className="health-item-details">{sec.details}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Two-column results grid */}
             <div className="results-two-col">
 
@@ -315,7 +383,7 @@ const Resume = () => {
               <div className="result-section card">
                 <div className="result-section-header strengths-header">
                   <span className="section-icon">✅</span>
-                  <h3>Strengths</h3>
+                  <h3>Key Strengths</h3>
                   <span className="section-count">{(analysis.strengths || []).length}</span>
                 </div>
                 <ul className="result-list strengths-list">
@@ -327,7 +395,7 @@ const Resume = () => {
                       </li>
                     ))
                   ) : (
-                    <li className="list-empty">No strengths detected. Try uploading a detailed resume.</li>
+                    <li className="list-empty">No distinct strengths detected. Try uploading a detailed resume.</li>
                   )}
                 </ul>
               </div>
@@ -336,7 +404,7 @@ const Resume = () => {
               <div className="result-section card">
                 <div className="result-section-header improvements-header">
                   <span className="section-icon">⚠️</span>
-                  <h3>Areas to Improve</h3>
+                  <h3>Actionable Improvements</h3>
                   <span className="section-count improvement-count">{(analysis.improvements || []).length}</span>
                 </div>
                 <ul className="result-list improvements-list">
@@ -348,7 +416,7 @@ const Resume = () => {
                       </li>
                     ))
                   ) : (
-                    <li className="list-empty">Great — no major improvements needed!</li>
+                    <li className="list-empty">Great — no critical improvements required!</li>
                   )}
                 </ul>
               </div>
@@ -358,12 +426,12 @@ const Resume = () => {
             <div className="result-section card keyword-section">
               <div className="result-section-header">
                 <span className="section-icon">🔑</span>
-                <h3>Keyword Analysis</h3>
+                <h3>Technical Keyword Analysis</h3>
               </div>
               <div className="keyword-cols">
                 <div className="keyword-group">
                   <h4 className="kw-group-title" style={{ color: '#10b981' }}>
-                    ✓ Detected Keywords ({(analysis.foundKeywords || []).length})
+                    ✓ Detected Competencies ({(analysis.foundKeywords || []).length})
                   </h4>
                   <div className="keyword-tags-wrap">
                     {(analysis.foundKeywords || []).length > 0 ? (
@@ -377,7 +445,7 @@ const Resume = () => {
                 </div>
                 <div className="keyword-group">
                   <h4 className="kw-group-title" style={{ color: '#f43f5e' }}>
-                    ✗ Missing Keywords ({(analysis.missingKeywords || []).length})
+                    ✗ Target Role Gaps ({(analysis.missingKeywords || []).length})
                   </h4>
                   <div className="keyword-tags-wrap">
                     {(analysis.missingKeywords || []).length > 0 ? (
@@ -385,18 +453,46 @@ const Resume = () => {
                         <span key={i} className="kw-tag kw-missing">{k}</span>
                       ))
                     ) : (
-                      <span className="kw-empty">No critical keywords missing</span>
+                      <span className="kw-empty">No critical role keywords missing</span>
                     )}
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Bullet Point Rewrites (Google X-Y-Z Method) */}
+            {analysis.bulletRewrites && analysis.bulletRewrites.length > 0 && (
+              <div className="result-section card bullet-rewrites-section">
+                <div className="result-section-header">
+                  <span className="section-icon">✍️</span>
+                  <h3>How to Upgrade Your Experience Bullets (Google X-Y-Z Method)</h3>
+                </div>
+                <p className="bullet-rewrite-sub">
+                  Transform passive task descriptions into quantified accomplishment statements: <em>"Accomplished [X] as measured by [Y], by doing [Z]"</em>.
+                </p>
+                <div className="rewrites-grid">
+                  {analysis.bulletRewrites.map((item, i) => (
+                    <div key={i} className="rewrite-card">
+                      <div className="rewrite-before">
+                        <span className="rewrite-label label-before">❌ Weak Before</span>
+                        <p>{item.before}</p>
+                      </div>
+                      <div className="rewrite-arrow">➔</div>
+                      <div className="rewrite-after">
+                        <span className="rewrite-label label-after">✅ High-Impact After</span>
+                        <p>{item.after}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* ATS Tips */}
             <div className="result-section card ats-section">
               <div className="result-section-header">
                 <span className="section-icon">🤖</span>
-                <h3>ATS Compatibility Tips</h3>
+                <h3>ATS Compatibility & Formatting Tips</h3>
               </div>
               <div className="ats-tips-grid">
                 {(analysis.atsTips || []).map((tip, i) => (
