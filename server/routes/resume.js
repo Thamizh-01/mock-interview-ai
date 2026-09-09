@@ -58,15 +58,44 @@ async function extractText(filePath) {
     }
 
     if (ext === '.pdf') {
-      // 1. Primary: pdf2json (fast, serverless-friendly, handles all PDF versions)
+      // 1. Primary: pdf2json with top-to-bottom reading order spatial reconstruction
       try {
         const PDFParser = require('pdf2json');
         const textFromPdf = await new Promise((resolve) => {
-          const parser = new PDFParser(null, 1);
-          parser.on('pdfParser_dataReady', () => {
+          const parser = new PDFParser();
+          parser.on('pdfParser_dataReady', (pdfData) => {
             try {
-              const raw = parser.getRawTextContent();
-              resolve(raw ? raw.replace(/----------------Page \(\d+\) Break----------------/g, '\n').trim() : '');
+              let fullText = '';
+              if (pdfData?.Pages && Array.isArray(pdfData.Pages)) {
+                for (const page of pdfData.Pages) {
+                  if (!page.Texts || !Array.isArray(page.Texts)) continue;
+                  // Sort texts vertically (y) then horizontally (x)
+                  const sortedTexts = [...page.Texts].sort((a, b) => {
+                    if (Math.abs(a.y - b.y) > 0.4) return a.y - b.y;
+                    return a.x - b.x;
+                  });
+                  const pageLines = [];
+                  let currentLine = [];
+                  let lastY = -1;
+                  for (const item of sortedTexts) {
+                    try {
+                      const decoded = decodeURIComponent(item.R.map(r => r.T).join(''));
+                      if (lastY !== -1 && Math.abs(item.y - lastY) > 0.4) {
+                        pageLines.push(currentLine.join(' '));
+                        currentLine = [];
+                      }
+                      currentLine.push(decoded);
+                      lastY = item.y;
+                    } catch (_) {}
+                  }
+                  if (currentLine.length > 0) pageLines.push(currentLine.join(' '));
+                  fullText += pageLines.join('\n') + '\n';
+                }
+              }
+              if (!fullText.trim()) {
+                fullText = (parser.getRawTextContent() || '').replace(/----------------Page \(\d+\) Break----------------/g, '\n');
+              }
+              resolve(fullText.trim());
             } catch (_) {
               resolve('');
             }
@@ -79,7 +108,7 @@ async function extractText(filePath) {
         });
 
         if (textFromPdf && textFromPdf.length > 20) {
-          console.log(`[pdf2json] Successfully extracted ${textFromPdf.length} characters`);
+          console.log(`[pdf2json] Successfully extracted ${textFromPdf.length} characters in top-to-bottom reading order`);
           return textFromPdf;
         }
       } catch (e0) {
@@ -230,12 +259,12 @@ function smartAnalyzeResume(text, fileName) {
   // ── 1. Candidate Info Extraction ───────────────────────────────────────────
   let candidateName = '';
 
-  // 1a. Search the first 6 lines of resume for candidate name (standard on resumes)
-  const titleDisallow = /^(developer|engineer|manager|architect|designer|scientist|administrator|consultant|analyst|full stack|backend|frontend|software|resume|curriculum|vitae|page|contact|email|phone|objective|summary|experience|skills|education|profile|portfolio|about me|work|projects|b\.tech|bachelor)/i;
+  // 1a. Search the first 6 lines of resume for candidate name (top of document)
+  const titleDisallow = /\b(developer|engineer|manager|architect|designer|scientist|administrator|consultant|analyst|full\s*stack|backend|frontend|software|resume|curriculum|vitae|page|contact|email|phone|objective|summary|experience|skills|education|profile|portfolio|about\s*me|work|projects|b\.tech|bachelor|technical|competencies|certif|awards|languages)\b/i;
   for (const line of lines.slice(0, 6)) {
-    const clean = line.replace(/[^a-zA-Z\s]/g, '').trim();
+    const clean = line.replace(/[^a-zA-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
     const wds = clean.split(/\s+/).filter(Boolean);
-    if (wds.length >= 2 && wds.length <= 4 && clean.length >= 4 && clean.length <= 35 && !titleDisallow.test(clean) && !/@/.test(line) && !/\d{3}/.test(line)) {
+    if (wds.length >= 1 && wds.length <= 4 && clean.length >= 3 && clean.length <= 35 && !titleDisallow.test(clean) && !/@/.test(line) && !/\d{3}/.test(line)) {
       candidateName = wds.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       break;
     }
@@ -246,7 +275,7 @@ function smartAnalyzeResume(text, fileName) {
     const cleanFileName = fileName
       .replace(/\.[^/.]+$/, '')
       .replace(/[_-]/g, ' ')
-      .replace(/\b(resume|cv|curriculum|vitae|profile|doc|docx|pdf|latest|updated|final|new|swe|dev|engineer)\b/gi, '')
+      .replace(/\b(resume|cv|curriculum|vitae|profile|doc|docx|pdf|latest|updated|final|new|swe|dev|engineer|analyst)\b/gi, '')
       .trim();
     const fWds = cleanFileName.split(/\s+/).filter(Boolean);
     if (fWds.length >= 1 && fWds.length <= 4 && cleanFileName.length >= 3) {
