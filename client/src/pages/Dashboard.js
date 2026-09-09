@@ -12,6 +12,7 @@ const Dashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [notification, setNotification] = useState(null);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const showNotification = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -72,21 +73,23 @@ const Dashboard = () => {
     }
   };
 
-  const handleResetProgress = async () => {
-    // eslint-disable-next-line no-restricted-globals
-    if (window.confirm('Are you sure you want to reset all your progress data? This cannot be undone.')) {
-      setRefreshing(true);
-      try {
-        await api.post('/progress/reset');
-        localStorage.removeItem('mockpro_analytics_cache');
-        await loadAnalytics();
-        showNotification('Progress reset successfully.');
-      } catch (err) {
-        console.error('Failed to reset progress:', err);
-        showNotification('Failed to reset progress.', 'error');
-      } finally {
-        setRefreshing(false);
-      }
+  const handleResetProgress = () => {
+    setShowResetModal(true);
+  };
+
+  const confirmResetProgress = async () => {
+    setRefreshing(true);
+    try {
+      await api.post('/progress/reset');
+      localStorage.removeItem('mockpro_analytics_cache');
+      await loadAnalytics();
+      showNotification('Progress reset successfully.');
+    } catch (err) {
+      console.error('Failed to reset progress:', err);
+      showNotification('Failed to reset progress.', 'error');
+    } finally {
+      setRefreshing(false);
+      setShowResetModal(false);
     }
   };
 
@@ -714,6 +717,107 @@ const Dashboard = () => {
             )}
           </div>
         )}
+
+      {/* Custom In-App Confirmation Modal */}
+      {showResetModal && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={() => !refreshing && setShowResetModal(false)}
+        >
+          <div 
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '440px',
+              width: '100%',
+              padding: '28px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
+              textAlign: 'center',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div 
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                backgroundColor: '#fee2e2',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '26px',
+                margin: '0 auto 16px auto'
+              }}
+            >
+              🗑️
+            </div>
+
+            <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 8px 0' }}>
+              Reset All Progress Data?
+            </h3>
+
+            <p style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+              Are you sure you want to reset your interview history, practice scores, and metrics? This action is permanent and cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                disabled={refreshing}
+                style={{
+                  flex: 1,
+                  padding: '11px 18px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmResetProgress}
+                disabled={refreshing}
+                style={{
+                  flex: 1,
+                  padding: '11px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  fontWeight: '600',
+                  fontSize: '14px',
+                  cursor: refreshing ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+                }}
+              >
+                {refreshing ? 'Resetting...' : 'Yes, Reset All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </div>
     </div>

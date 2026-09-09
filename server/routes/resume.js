@@ -12,20 +12,32 @@ try { mammoth     = require('mammoth');  } catch (e) {}
 try { PDFDocument = require('pdfkit');  } catch (e) {}
 
 // ── Multer storage ─────────────────────────────────────────────────────────
+const uploadsDir = process.env.VERCEL
+  ? '/tmp/uploads'
+  : path.join(__dirname, '..', 'uploads');
+
+try {
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+} catch (_) {}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '..', 'uploads');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    try {
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (_) {}
+    cb(null, uploadsDir);
   },
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+  filename: (req, file, cb) => {
+    const safeName = (file.originalname || 'resume').replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, `${Date.now()}-${safeName}`);
+  }
 });
 
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = /pdf|doc|docx/i.test(path.extname(file.originalname));
+    const ok = /pdf|doc|docx/i.test(path.extname(file.originalname || ''));
     ok ? cb(null, true) : cb(new Error('Only PDF, DOC, DOCX files are allowed'));
   }
 });
@@ -36,21 +48,40 @@ async function extractText(filePath) {
   try {
     if ((ext === '.doc' || ext === '.docx') && mammoth) {
       const result = await mammoth.extractRawText({ path: filePath });
-      return result.value || '';
+      if (result && result.value) return result.value;
     }
     if (ext === '.pdf') {
-      // Try pdf-parse v2 via its CLI-like interface
+      const buffer = fs.readFileSync(filePath);
+      // Try standard pdf-parse
+      try {
+        const pdf = require('pdf-parse');
+        if (typeof pdf === 'function') {
+          const data = await pdf(buffer);
+          if (data && data.text && data.text.trim()) return data.text;
+        } else if (pdf && pdf.PDFParse) {
+          const parser = new pdf.PDFParse({});
+          const data = await parser.load({ data: new Uint8Array(buffer) });
+          if (data && data.text && data.text.trim()) return data.text;
+        }
+      } catch (pdfErr) {
+        console.warn('pdf-parse standard attempt:', pdfErr.message);
+      }
+
+      // Try pdf-parse v2 class if present
       try {
         const { PDFParse } = require('pdf-parse');
-        const parser = new PDFParse({});
-        const buffer = fs.readFileSync(filePath);
-        const data   = await parser.load({ data: new Uint8Array(buffer) });
-        if (data && data.text) return data.text;
+        if (PDFParse) {
+          const parser = new PDFParse({});
+          const data = await parser.load({ data: new Uint8Array(buffer) });
+          if (data && data.text && data.text.trim()) return data.text;
+        }
       } catch (_) {}
-      // Fallback: read raw bytes and look for readable ASCII chunks
-      const raw = fs.readFileSync(filePath).toString('binary');
-      const chunks = raw.match(/[A-Za-z0-9 ,.\-@\n\r:\/+#()&%$!?'"]{6,}/g) || [];
-      return chunks.join(' ');
+
+      // Fallback: read raw bytes and extract readable ASCII chunks
+      const raw = buffer.toString('binary');
+      const chunks = raw.match(/[A-Za-z0-9 ,.\-@\n\r:\/+#()&%$!?'"]{4,}/g) || [];
+      const extracted = chunks.join(' ').trim();
+      if (extracted.length > 30) return extracted;
     }
     return fs.readFileSync(filePath, 'utf8');
   } catch (err) {
@@ -254,12 +285,12 @@ router.post('/upload', optionalAuth, upload.single('resume'), async (req, res) =
     return res.status(400).json({ message: 'No file uploaded' });
   }
 
-  const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+  const filePath = req.file.path || path.join(uploadsDir, req.file.filename);
 
   try {
     console.log('📄 Extracting text from:', req.file.originalname);
     const text = await extractText(filePath);
-    console.log(`📝 Extracted ${text.split(/\s+/).length} words`);
+    console.log(`📝 Extracted ${text ? text.split(/\s+/).length : 0} words`);
 
     const analysis = smartAnalyzeResume(text, req.file.originalname);
     analysis.analyzedAt   = new Date();
@@ -271,6 +302,7 @@ router.post('/upload', optionalAuth, upload.single('resume'), async (req, res) =
       try {
         const user = await User.findById(req.user._id);
         if (user) {
+          user.resume = user.resume || {};
           user.resume.uploaded     = true;
           user.resume.lastAnalyzed = new Date();
           user.resume.filename     = req.file.filename;
