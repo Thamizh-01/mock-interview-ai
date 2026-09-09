@@ -20,7 +20,8 @@ const Login = () => {
       await loginWithGoogle(response.credential);
       navigate('/questions');
     } catch (err) {
-      setError(err.response?.data?.message || 'Google login failed');
+      const msg = err.response?.data?.error ? `${err.response.data.message}: ${err.response.data.error}` : (err.response?.data?.message || 'Google login failed');
+      setError(msg);
     } finally {
       setGoogleLoading(false);
     }

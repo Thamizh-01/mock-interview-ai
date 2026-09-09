@@ -48,9 +48,15 @@ app.use("/api/resume", resumeRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
 app.get("/api/health", (req, res) => {
+  const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];
   res.json({
     success: true,
-    message: "Mock Interview API is running"
+    message: "Mock Interview API is running",
+    database: dbStates[mongoose.connection.readyState] || "unknown",
+    hasMongoUri: !!process.env.MONGODB_URI,
+    isLocalMongo: (process.env.MONGODB_URI || '').includes('localhost') || (process.env.MONGODB_URI || '').includes('127.0.0.1'),
+    hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY
   });
 });
 

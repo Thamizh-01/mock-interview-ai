@@ -21,7 +21,8 @@ const Register = () => {
       await loginWithGoogle(response.credential);
       navigate('/questions');
     } catch (err) {
-      setError(err.response?.data?.message || 'Google sign up failed');
+      const msg = err.response?.data?.error ? `${err.response.data.message}: ${err.response.data.error}` : (err.response?.data?.message || 'Google sign up failed');
+      setError(msg);
     } finally {
       setGoogleLoading(false);
     }
