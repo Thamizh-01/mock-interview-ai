@@ -229,21 +229,32 @@ function smartAnalyzeResume(text, fileName) {
 
   // ── 1. Candidate Info Extraction ───────────────────────────────────────────
   let candidateName = '';
-  for (const line of lines.slice(0, 5)) {
+
+  // 1a. Search the first 6 lines of resume for candidate name (standard on resumes)
+  const titleDisallow = /^(developer|engineer|manager|architect|designer|scientist|administrator|consultant|analyst|full stack|backend|frontend|software|resume|curriculum|vitae|page|contact|email|phone|objective|summary|experience|skills|education|profile|portfolio|about me|work|projects|b\.tech|bachelor)/i;
+  for (const line of lines.slice(0, 6)) {
     const clean = line.replace(/[^a-zA-Z\s]/g, '').trim();
-    const isHeaderWord = /resume|curriculum|vitae|page|contact|email|profile|phone/i.test(clean);
-    if (clean.length >= 3 && clean.length <= 35 && clean.split(/\s+/).length >= 2 && clean.split(/\s+/).length <= 4 && !isHeaderWord) {
-      candidateName = clean.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    const wds = clean.split(/\s+/).filter(Boolean);
+    if (wds.length >= 2 && wds.length <= 4 && clean.length >= 4 && clean.length <= 35 && !titleDisallow.test(clean) && !/@/.test(line) && !/\d{3}/.test(line)) {
+      candidateName = wds.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
       break;
     }
   }
+
+  // 1b. Fallback: clean candidate name from file name (e.g. "Thamizh_Resume.pdf" -> "Thamizh")
   if (!candidateName && fileName) {
-    const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').replace(/resume|cv/gi, '').trim();
-    if (cleanFileName.length >= 3) {
-      candidateName = cleanFileName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    const cleanFileName = fileName
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[_-]/g, ' ')
+      .replace(/\b(resume|cv|curriculum|vitae|profile|doc|docx|pdf|latest|updated|final|new|swe|dev|engineer)\b/gi, '')
+      .trim();
+    const fWds = cleanFileName.split(/\s+/).filter(Boolean);
+    if (fWds.length >= 1 && fWds.length <= 4 && cleanFileName.length >= 3) {
+      candidateName = fWds.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
-  if (!candidateName) candidateName = 'Candidate';
+
+  if (!candidateName) candidateName = 'Candidate Profile';
 
   const emailMatch    = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
   const phoneMatch    = rawText.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+?\d{10,14}/);
@@ -360,12 +371,22 @@ function smartAnalyzeResume(text, fileName) {
 
   // Penalties
   let penalty = 0;
-  if (wordCount < 120) penalty += 25;
+  if (wordCount < 100) penalty += 15;
   if (!emailMatch && !phoneMatch) penalty += 15;
   if (foundWeakPhrases.length > 2) penalty += 4;
 
-  let overallScore = Math.max(15, Math.min(98, contactScore + sectionScore + impactScore + skillScore + lengthScore - penalty));
-  let atsScore     = Math.max(15, Math.min(99, Math.round((contactScore * 0.25 + sectionScore * 0.35 + skillScore * 0.25 + lengthScore * 0.15) * 1.05)));
+  const contactWeighted = (contactScore / 20) * 20;
+  const sectionWeighted = (sectionScore / 25) * 25;
+  const impactWeighted  = (impactScore / 25) * 25;
+  const skillWeighted   = (skillScore / 20) * 20;
+  const lengthWeighted  = (lengthScore / 10) * 10;
+
+  const totalSum = contactWeighted + sectionWeighted + impactWeighted + skillWeighted + lengthWeighted - penalty;
+  let overallScore = Math.max(25, Math.min(98, Math.round(totalSum)));
+
+  // ATS Score emphasizes contact info, section structure, and technical keyword density
+  const atsRaw = ((contactScore / 20) * 25) + ((sectionScore / 25) * 35) + ((skillScore / 20) * 30) + ((lengthScore / 10) * 10) - (penalty * 0.4);
+  let atsScore = Math.max(25, Math.min(99, Math.round(atsRaw)));
 
   // ── 7. Dynamic Strengths ───────────────────────────────────────────────────
   const strengths = [];
