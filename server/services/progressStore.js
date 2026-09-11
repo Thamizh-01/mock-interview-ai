@@ -366,11 +366,18 @@ class ProgressStore {
     state.activities.push(activity);
     trimActivities(state.activities);
 
-    if (state.isUser && state.dbUser) {
-      state.dbUser.progress = state.progress;
-      state.dbUser.activities = state.activities;
-      state.dbUser.lastActivityDate = new Date();
-      await state.dbUser.save();
+    if (state.isUser && user?._id) {
+      try {
+        await User.findByIdAndUpdate(user._id, {
+          $set: {
+            progress: state.progress,
+            activities: state.activities,
+            lastActivityDate: new Date()
+          }
+        });
+      } catch (err) {
+        console.error('Failed to update user progress:', err.message);
+      }
     }
 
     if (!state.isUser) {

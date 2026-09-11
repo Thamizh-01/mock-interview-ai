@@ -551,19 +551,19 @@ router.post('/upload', optionalAuth, upload.single('resume'), async (req, res) =
     analysis.overallScore = analysis.score;
     console.log(`✅ Analysis complete — Candidate: "${analysis.candidateName}", Score: ${analysis.score}, Role: ${analysis.detectedRole}`);
 
-    // Persist for logged-in users
+    // Persist for logged-in users atomically
     if (req.user?._id) {
       try {
-        const user = await User.findById(req.user._id);
-        if (user) {
-          user.resume = user.resume || {};
-          user.resume.uploaded     = true;
-          user.resume.lastAnalyzed = new Date();
-          user.resume.filename     = req.file.filename;
-          user.resume.score        = analysis.score;
-          user.resume.analysisData = analysis;
-          await user.save();
-        }
+        await User.findByIdAndUpdate(req.user._id, {
+          $set: {
+            'resume.uploaded': true,
+            'resume.lastAnalyzed': new Date(),
+            'resume.filename': req.file.filename,
+            'resume.score': analysis.score,
+            'resume.analysisData': analysis
+          }
+        }, { new: true });
+        console.log(`💾 Successfully saved fresh resume analysis to database for user ${req.user._id}`);
       } catch (dbErr) {
         console.error('DB save error:', dbErr.message);
       }

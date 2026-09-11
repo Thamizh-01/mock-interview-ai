@@ -8,9 +8,24 @@ const Resume = () => {
   const [analysis, setAnalysis] = useState(null);
   const [message, setMessage] = useState(null);
   const fileInputRef = useRef(null);
+  const hasActiveAnalysisRef = useRef(false);
+  const hasDismissedOldReportRef = useRef(false);
 
   useEffect(() => {
+    // Check if user already has an active analysis in this session
+    const cached = sessionStorage.getItem('mockpro_active_resume_analysis');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.score !== undefined || parsed.overallScore !== undefined)) {
+          setAnalysis(parsed);
+          hasActiveAnalysisRef.current = true;
+          return;
+        }
+      } catch (e) {}
+    }
     loadPreviousAnalysis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const showMessage = (type, text) => {
@@ -21,7 +36,14 @@ const Resume = () => {
   const loadPreviousAnalysis = async () => {
     try {
       const res = await api.get('/resume/analysis');
-      if (res.data?.analysis) {
+      // CRITICAL: Never overwrite if user has already analyzed a new resume, has selected a new file, or dismissed the old report
+      if (
+        res.data?.analysis &&
+        !hasActiveAnalysisRef.current &&
+        !hasDismissedOldReportRef.current &&
+        !file &&
+        !analyzing
+      ) {
         setAnalysis(res.data.analysis);
       }
     } catch (err) {
@@ -41,6 +63,9 @@ const Resume = () => {
     if (validTypes.includes(ext) && selectedFile.size <= 5 * 1024 * 1024) {
       setFile(selectedFile);
       setAnalysis(null); // Clear previous result when new file picked
+      hasActiveAnalysisRef.current = false;
+      hasDismissedOldReportRef.current = true;
+      try { sessionStorage.removeItem('mockpro_active_resume_analysis'); } catch (e) {}
       showMessage('success', `✅ "${selectedFile.name}" selected. Click Analyze to continue.`);
     } else {
       showMessage('error', 'Please upload a PDF, DOC, or DOCX file under 5MB.');
@@ -67,6 +92,7 @@ const Resume = () => {
       return;
     }
     setAnalyzing(true);
+    hasDismissedOldReportRef.current = true;
     try {
       const formData = new FormData();
       formData.append('resume', file);
@@ -75,11 +101,17 @@ const Resume = () => {
       const res = await api.post('/resume/upload', formData);
 
       if (res.data?.analysis) {
-        setAnalysis(res.data.analysis);
+        const freshAnalysis = res.data.analysis;
+        hasActiveAnalysisRef.current = true;
+        setAnalysis(freshAnalysis);
+        try {
+          sessionStorage.setItem('mockpro_active_resume_analysis', JSON.stringify(freshAnalysis));
+        } catch (e) {}
+
         showMessage('success', '🎉 Resume analyzed successfully!');
         try {
           api.post('/progress/analyze-resume', {
-            score: res.data.analysis.overallScore || res.data.analysis.score || 80,
+            score: freshAnalysis.overallScore || freshAnalysis.score || 80,
             fileName: file.name
           }).catch(() => {});
         } catch (e) {}
@@ -96,9 +128,14 @@ const Resume = () => {
   };
 
   const handleClearAndRetry = () => {
+    hasActiveAnalysisRef.current = false;
+    hasDismissedOldReportRef.current = true;
     setAnalysis(null);
     setFile(null);
     setMessage(null);
+    try {
+      sessionStorage.removeItem('mockpro_active_resume_analysis');
+    } catch (e) {}
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
