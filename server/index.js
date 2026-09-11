@@ -12,6 +12,7 @@ const aptitudeRoutes = require("./routes/aptitude");
 const progressRoutes = require("./routes/progress");
 const resumeRoutes = require("./routes/resume");
 const analyticsRoutes = require("./routes/analytics");
+const interviewRoutes = require("./routes/interview");
 
 const app = express();
 
@@ -120,6 +121,7 @@ app.use("/api/aptitude", aptitudeRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/interview", interviewRoutes);
 
 app.get("/api/health", async (req, res) => {
   const dbStates = ["disconnected", "connected", "connecting", "disconnecting"];

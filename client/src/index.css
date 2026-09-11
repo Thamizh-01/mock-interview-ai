@@ -5846,3 +5846,999 @@ input, textarea, select {
     grid-template-columns: 1fr;
   }
 }
+
+/* Simulator Domain Selection Styles */
+.sim-tabs-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.75rem;
+}
+
+.sim-tab-btn {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sim-tab-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: #fff;
+}
+
+.sim-tab-btn.active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #a5b4fc;
+}
+
+.sim-search-bar {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.sim-search-bar input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.6rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+.sim-search-bar input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.sim-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.sim-domain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.sim-domain-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.sim-domain-card:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(99, 102, 241, 0.35);
+  transform: translateY(-3px);
+}
+
+.sim-domain-card.selected {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(99, 102, 241, 0.7);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+}
+
+.sim-domain-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.sim-domain-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sim-domain-icon {
+  font-size: 1.6rem;
+  width: 44px;
+  height: 44px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sim-domain-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.sim-domain-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  text-transform: uppercase;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.sim-domain-toggle-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sim-domain-toggle-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.sim-domain-toggle-btn.active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+.sim-domain-desc {
+  font-size: 0.84rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+  flex: 1;
+}
+
+.sim-subtypes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.sim-subtype-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.sim-subtype-pill:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #fff;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.sim-subtype-pill.active {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #6366f1;
+  color: #c7d2fe;
+  font-weight: 600;
+}
+
+.sim-selected-summary {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.sim-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sim-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #e0e7ff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.sim-summary-remove {
+  background: none;
+  border: none;
+  color: #a5b4fc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.sim-summary-remove:hover {
+  color: #f43f5e;
+}
+
+/* ==========================================================================
+   VOICE AI REAL-TIME RESUME INTERVIEW STYLES
+   ========================================================================== */
+
+/* Mode Switcher Nav */
+.interview-mode-switcher {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.mode-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.75rem;
+  border-radius: 50px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+
+.mode-switch-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.mode-switch-btn.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(139, 92, 246, 0.3) 100%);
+  border-color: #6366f1;
+  color: #fff;
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+}
+
+/* Setup Dropzone Card */
+.resume-interview-setup-card {
+  max-width: 860px;
+  margin: 0 auto;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.25rem;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.interview-dropzone {
+  border: 2px dashed rgba(99, 102, 241, 0.35);
+  border-radius: 16px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.interview-dropzone:hover, .interview-dropzone.dragover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+}
+
+.dropzone-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+  display: block;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.dropzone-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+
+.dropzone-subtitle {
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.file-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+/* AI Voice Room */
+.voice-room-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.voice-room-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 2rem 2.5rem;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.15);
+}
+
+.voice-room-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.candidate-profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.candidate-avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #d946ef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+/* Center Stage: AI Avatar & Glowing Speaking Orb */
+.ai-avatar-center-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0 2rem;
+  position: relative;
+}
+
+.ai-orb-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.ai-orb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #818cf8 0%, #4f46e5 55%, #1e1b4b 100%);
+  box-shadow: 0 0 35px rgba(99, 102, 241, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.3);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+}
+
+.ai-orb.speaking {
+  animation: orbPulse 1.4s ease-in-out infinite alternate;
+  box-shadow: 0 0 60px rgba(139, 92, 246, 0.85), inset 0 0 30px rgba(255, 255, 255, 0.6);
+  background: radial-gradient(circle at 30% 30%, #a78bfa 0%, #6366f1 50%, #7c3aed 100%);
+}
+
+.ai-orb-wave-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ai-orb.speaking + .ai-orb-wave-ring {
+  animation: waveExpand 1.6s ease-out infinite;
+}
+
+@keyframes orbPulse {
+  0% { transform: scale(0.96); }
+  100% { transform: scale(1.1); filter: brightness(1.2); }
+}
+
+@keyframes waveExpand {
+  0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+}
+
+/* Sound Wave Bars Animation */
+.sound-waves-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  margin-top: 0.5rem;
+}
+
+.wave-bar {
+  width: 3px;
+  height: 8px;
+  background: #6366f1;
+  border-radius: 3px;
+  transition: height 0.15s ease;
+}
+
+.sound-waves-wrapper.active .wave-bar {
+  animation: soundBarDance 0.8s ease-in-out infinite alternate;
+}
+
+.sound-waves-wrapper.active .wave-bar:nth-child(1) { animation-delay: 0.1s; }
+.sound-waves-wrapper.active .wave-bar:nth-child(2) { animation-delay: 0.25s; }
+.sound-waves-wrapper.active .wave-bar:nth-child(3) { animation-delay: 0.05s; }
+.sound-waves-wrapper.active .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+.sound-waves-wrapper.active .wave-bar:nth-child(5) { animation-delay: 0.15s; }
+
+@keyframes soundBarDance {
+  0% { height: 4px; background: #6366f1; }
+  100% { height: 22px; background: #38bdf8; }
+}
+
+/* AI Question Speech Bubble */
+.ai-question-speech-bubble {
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+  position: relative;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.ai-bubble-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.ai-stage-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.ai-question-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.6;
+}
+
+/* Candidate Speaking Stage */
+.candidate-speech-stage {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.candidate-speech-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.recording-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #f43f5e;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.recording-pulse-dot {
+  width: 10px;
+  height: 10px;
+  background: #f43f5e;
+  border-radius: 50%;
+  animation: micPulse 1s infinite alternate;
+}
+
+@keyframes micPulse {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #f43f5e; }
+}
+
+.transcript-stream-display {
+  min-height: 90px;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  font-size: 1.05rem;
+  color: #f1f5f9;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+}
+
+.transcript-stream-display.placeholder {
+  color: #64748b;
+  font-style: italic;
+}
+
+.voice-controls-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-record-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-record-large.recording {
+  background: #f43f5e;
+  color: #fff;
+  box-shadow: 0 0 25px rgba(244, 63, 94, 0.45);
+}
+
+.btn-record-large.idle {
+  background: linear-gradient(135deg, #06b6d4, #6366f1);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+}
+
+/* Debrief Dimension Cards */
+.debrief-scorecard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin: 1.75rem 0;
+}
+
+.dimension-card {
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.dimension-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.dimension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.dimension-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+
+.dimension-score-badge {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.dimension-desc {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-top: 0.5rem;
+}
+
+.roadmap-timeline-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.roadmap-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-start;
+}
+
+.roadmap-step:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-day-pill {
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #a5b4fc;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+@keyframes urgentTimerPulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { transform: scale(1.04); box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.urgent-pulse {
+  animation: urgentTimerPulse 1.2s infinite ease-in-out;
+}
+
+/* ── AI INTELLIGENCE SUITE STYLES ─────────────────────────────────────────── */
+
+/* 1. Interviewer Persona Cards */
+.persona-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.persona-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.persona-card.active {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1.5px solid #818cf8;
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.25);
+}
+
+/* 2. Live Speech Delivery HUD */
+.speech-delivery-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.hud-pill.optimal {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hud-pill.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.hud-pill.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* 3. Behavioral STAR Heatmap */
+.star-heatmap-card {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.star-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.star-tag-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.25rem;
+}
+
+.star-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.star-pill.present {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.star-pill.missing {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  opacity: 0.85;
+}
+
+.star-pill.metric-present {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.star-pill.metric-missing {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.star-feedback-note {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* 4. "How a Staff Engineer Would Answer This" (AI Answer Rewriter) */
+.staff-rewrite-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 14px;
+  margin-top: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.staff-rewrite-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1.25rem;
+  background: rgba(99, 102, 241, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.staff-rewrite-header:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.staff-pill-badge {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.staff-rewrite-body {
+  padding: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.staff-metric-callout {
+  background: rgba(15, 23, 42, 0.5);
+  border-left: 3px solid #818cf8;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.staff-metric-callout.impact {
+  border-left-color: #10b981;
+}
+
+.staff-full-answer-box {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-top: 0.85rem;
+}
+
+/* 5. Job Description Alignment & Skill Gap Card */
+.jd-gap-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.35rem;
+  margin-top: 1.5rem;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+}
+
+.skill-chip.matched {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.skill-chip.gap {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+/* 6. Candidate Q&A Closing Round ("Ask the Interviewer") */
+.ask-interviewer-card {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 18px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.ask-quick-prompts {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.ask-prompt-pill {
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ask-prompt-pill:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: #818cf8;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.interviewer-reply-bubble {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}

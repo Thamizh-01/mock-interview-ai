@@ -1108,6 +1108,47 @@ router.get('/', (req, res) => {
   res.json({ categories, domains: domainCatalog });
 });
 
+// GET random questions by domain and subtype (e.g. /api/questions/fullstack/react/random?count=5)
+router.get('/:domain/:subtype/random', (req, res) => {
+  const { domain, subtype } = req.params;
+  const { count = 5 } = req.query;
+  const list = getQuestionsBySubtype(domain, subtype);
+  if (!list || list.length === 0) {
+    return res.status(404).json({ message: `No questions found for domain '${domain}', subtype '${subtype}'` });
+  }
+  const shuffled = [...list].sort(() => 0.5 - Math.random());
+  res.json({ questions: shuffled.slice(0, parseInt(count)) });
+});
+
+// GET random questions by category/domain (e.g. /api/questions/webdev/random?count=5)
+router.get('/:category/random', (req, res) => {
+  const { category } = req.params;
+  const { count = 5 } = req.query;
+  
+  let qList = questions[category];
+  if (!qList && domainQuestionsMap && domainQuestionsMap[category]) {
+    qList = domainQuestionsMap[category];
+  }
+  if (!qList && domainCatalog) {
+    const domain = domainCatalog.find(d => d.id === category);
+    if (domain && domain.subtypes) {
+      qList = [];
+      domain.subtypes.forEach(s => {
+        if (domainQuestionsMap && domainQuestionsMap[s.id]) {
+          qList.push(...domainQuestionsMap[s.id]);
+        }
+      });
+    }
+  }
+
+  if (!qList || qList.length === 0) {
+    return res.status(404).json({ message: 'Category not found' });
+  }
+  
+  const shuffled = [...qList].sort(() => 0.5 - Math.random());
+  res.json({ questions: shuffled.slice(0, parseInt(count)) });
+});
+
 // GET questions by domain and subtype (e.g. /api/questions/fullstack/react -> 30 questions)
 router.get('/:domain/:subtype', (req, res) => {
   const { domain, subtype } = req.params;
@@ -1147,18 +1188,6 @@ router.get('/:category', (req, res) => {
     return res.status(404).json({ message: 'Category not found' });
   }
   res.json({ category, questions: questions[category] });
-});
-
-router.get('/:category/random', (req, res) => {
-  const { category } = req.params;
-  const { count = 5 } = req.query;
-  
-  if (!questions[category]) {
-    return res.status(404).json({ message: 'Category not found' });
-  }
-  
-  const shuffled = [...questions[category]].sort(() => 0.5 - Math.random());
-  res.json({ questions: shuffled.slice(0, parseInt(count)) });
 });
 
 // AI Answer Analysis Endpoint
